@@ -6,9 +6,24 @@
 
 Первый запуск делайте вручную и с `PUBLISH_ALLOW=no`. Когда сухой прогон доходит до `publish-result.json` со статусом `dry_run`, переключайте секрет на `yes`.
 
-Расписание для боевого режима: каждые 15 минут с 09:00 до 23:59 МСК. В UTC это `*/15 6-20 * * *`. Холостой запуск (слот ещё рано) — один вызов `pipeline.py gate` без агентов.
+Расписание cron на своей машине: каждые 15 минут с 09:00 до 23:59 МСК. Если cron в UTC, это `*/15 6-20 * * *`. Это расписание только для `cron_gate.sh`, не для Cloud Agent.
 
-Дешевле всего гонять `scripts/cron_gate.sh` (обёртка над `pipeline.py gate`) по cron и открывать Cursor только когда `status=ready`.
+Дешёвый режим: **не ставь** у Automation триггер по расписанию. Расписание каждые 15 минут поднимает Cloud Agent даже на `idle` и списывает токены. `scripts/cron_gate.sh` сам вызывает `pipeline.py gate` (это Python, 0 токенов). Коды: `0` = слот готов, `2` = рано, `1` = ошибка. Один и тот же `publish_at` будит агента один раз.
+
+1. Automation: триггер только **Webhook**, без cron. Репозиторий `fansmok/tgnews`, ветка `main`, модель — самая дешёвая без длинного reasoning. Инструкция:
+
+```text
+Выпуск футбольной новости по agents/fn-director.md. Начни с python3 scripts/pipeline.py gate. Если idle — сразу закончи одной строкой с next_publish_at. Иначе scout → produce → fn-critic → publish → finish. fn-copy и fn-fixer только по сигналу pipeline.
+```
+
+2. Сохрани Automation, скопируй webhook URL и ключ. В `.env` на машине, где крутится cron (не в git):
+
+```text
+CURSOR_AUTOMATION_WEBHOOK_URL=
+CURSOR_AUTOMATION_WEBHOOK_TOKEN=
+```
+
+3. Пока первый выпуск не дал `publish-result.json` со статусом `dry_run`, держи `PUBLISH_ALLOW=no`. Потом переключи секрет на `yes`.
 
 ### Cron на Mac (локально)
 
@@ -27,10 +42,10 @@ CRON_TZ=Europe/Moscow
 
 Лог: `memory/cron-gate.log`. Код выхода: `0` = слот готов, `2` = рано (idle), `1` = ошибка.
 
-Уведомление на Mac, когда слот открылся (добавь в crontab или в `~/.zshrc` перед cron):
+Уведомление на Mac, когда слот открылся. Cron не читает `~/.zshrc`, строка кладётся в `.env`:
 
 ```bash
-export NEWS_AGENT_NOTIFY_CMD='osascript -e "display notification \"Слот готов — открой Agent\" with title \"NEWS-AGENT\""'
+NEWS_AGENT_NOTIFY_CMD=osascript -e "display notification \"Слот готов — открой Agent\" with title \"NEWS-AGENT\""
 ```
 
 ### VPS (Linux)
