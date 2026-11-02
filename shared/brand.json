@@ -1,0 +1,33 @@
+{
+  "brand": "FC Media",
+  "colors": {
+    "green": "#0B5D28",
+    "yellow": "#FFD100",
+    "black": "#0B0B0D",
+    "white": "#FFFFFF",
+    "red": "#E10600",
+    "insider": "#1FAF38",
+    "panel": "#133F27",
+    "gray": "#6B6F72"
+  },
+  "fonts": {
+    "display": "assets/brand/fonts/Montserrat-ExtraBold.ttf",
+    "bold": "assets/brand/fonts/Montserrat-Bold.ttf",
+    "text": "assets/brand/fonts/Montserrat-Regular.ttf"
+  },
+  "templates": {
+    "main": {"badge": "news", "label": "НОВОСТЬ"},
+    "urgent": {"badge": "urgent", "label": "СРОЧНО"},
+    "transfer": {"badge": "transfer", "label": "ТРАНСФЕР"},
+    "insider": {"badge": "insider", "label": "ИНСАЙД"},
+    "quote": {"badge": "news", "label": "ЦИТАТА"},
+    "result": {"badge": "news", "label": "РЕЗУЛЬТАТ"},
+    "fixture": {"badge": "news", "label": "МАТЧ"},
+    "stats": {"badge": "news", "label": "СТАТИСТИКА"},
+    "scandal": {"badge": "urgent", "label": "СРОЧНО"},
+    "meme": {"badge": "news", "label": "ФУТБОЛ"}
+  },
+  "sizes": [
+    {"id": "telegram-600", "width": 600, "height": 600, "kind": "square"}
+  ]
+}

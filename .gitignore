@@ -1,0 +1,31 @@
+.env
+.env.local
+*.local
+*.session
+*.session-journal
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+tmp/
+
+# runtime
+memory/news.db
+memory/news.db-*
+memory/runs/**
+!memory/runs/.gitkeep
+memory/slots/**
+.cursor/football-news-handoff.md
+.cursor/football-news-fragments/
+
+# generated emoji dump can be large; catalog in shared/ is committed only after sync review
+memory/emoji-cache/
+memory/feed-cache/
+.reference_url_cache.json
+*.reference_url_cache.json
+memory/last-push.json
+memory/ads-inbox.json
+memory/sportonkp-posts.jsonl
+memory/cron-gate.log

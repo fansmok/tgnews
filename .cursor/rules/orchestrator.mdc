@@ -1,0 +1,6 @@
+---
+description: Директор футбольного пайплайна не выполняет роли сам
+alwaysApply: true
+---
+
+Выпуск футбольной новости ведётся по `AGENTS.md` и `agents/fn-director.md`: механика — `scripts/pipeline.py`, смысловой gate — `fn-critic`, `fn-copy` и `fn-fixer` — только по сигналу скрипта. Director не пишет текст поста и не выносит вердикт критика.

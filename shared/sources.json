@@ -1,0 +1,49 @@
+{
+  "max_age_hours": 18,
+  "expand_age_hours": 36,
+  "feeds": [
+    {
+      "id": "bbc",
+      "url": "https://feeds.bbci.co.uk/sport/football/rss.xml",
+      "lang": "en",
+      "weight": 10
+    },
+    {
+      "id": "guardian",
+      "url": "https://www.theguardian.com/football/rss",
+      "lang": "en",
+      "weight": 8
+    },
+    {
+      "id": "marca",
+      "url": "https://www.marca.com/rss/en/football.xml",
+      "lang": "en",
+      "weight": 8
+    },
+    {
+      "id": "espn",
+      "url": "https://www.espn.com/espn/rss/soccer/news",
+      "lang": "en",
+      "weight": 7
+    },
+    {
+      "id": "sportsru",
+      "url": "https://www.sports.ru/rss/rubric.xml?s=208",
+      "lang": "ru",
+      "weight": 9
+    },
+    {
+      "id": "championat",
+      "url": "https://www.championat.com/rss/news/football/",
+      "lang": "ru",
+      "weight": 7
+    },
+    {
+      "id": "sky",
+      "url": "https://www.skysports.com/rss/12040",
+      "lang": "en",
+      "weight": 5
+    }
+  ],
+  "telegram_channels": []
+}

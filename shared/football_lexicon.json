@@ -1,0 +1,869 @@
+{
+  "clubs": [
+    {
+      "id": "arsenal",
+      "tier": "top",
+      "aliases": [
+        "arsenal",
+        "арсенал*"
+      ]
+    },
+    {
+      "id": "aston-villa",
+      "tier": "top",
+      "aliases": [
+        "aston villa",
+        "астон вилл"
+      ]
+    },
+    {
+      "id": "bournemouth",
+      "tier": "second",
+      "aliases": [
+        "bournemouth",
+        "борнмут"
+      ]
+    },
+    {
+      "id": "brighton",
+      "tier": "second",
+      "aliases": [
+        "brighton",
+        "брайтон"
+      ]
+    },
+    {
+      "id": "chelsea",
+      "tier": "top",
+      "aliases": [
+        "chelsea",
+        "челси"
+      ]
+    },
+    {
+      "id": "crystal-palace",
+      "tier": "second",
+      "aliases": [
+        "crystal palace",
+        "кристал пэлас"
+      ]
+    },
+    {
+      "id": "everton",
+      "tier": "second",
+      "aliases": [
+        "everton",
+        "эвертон"
+      ]
+    },
+    {
+      "id": "fulham",
+      "tier": "second",
+      "aliases": [
+        "fulham",
+        "фулхэм"
+      ]
+    },
+    {
+      "id": "liverpool",
+      "tier": "top",
+      "aliases": [
+        "liverpool",
+        "ливерпул*"
+      ]
+    },
+    {
+      "id": "man-city",
+      "tier": "top",
+      "aliases": [
+        "manchester city",
+        "man city",
+        "манчестер сити",
+        "ман сити"
+      ]
+    },
+    {
+      "id": "man-utd",
+      "tier": "top",
+      "aliases": [
+        "manchester united",
+        "man utd",
+        "man united",
+        "манчестер юнайтед",
+        "манчестер юнайт"
+      ]
+    },
+    {
+      "id": "newcastle",
+      "tier": "top",
+      "aliases": [
+        "newcastle",
+        "ньюкасл"
+      ]
+    },
+    {
+      "id": "nottingham",
+      "tier": "second",
+      "aliases": [
+        "nottingham forest",
+        "ноттингем форест",
+        "ноттингем"
+      ]
+    },
+    {
+      "id": "tottenham",
+      "tier": "top",
+      "aliases": [
+        "tottenham",
+        "spurs",
+        "тоттенхэм",
+        "тоттенхем"
+      ]
+    },
+    {
+      "id": "west-ham",
+      "tier": "second",
+      "aliases": [
+        "west ham",
+        "вест хэм"
+      ]
+    },
+    {
+      "id": "wolves",
+      "tier": "second",
+      "aliases": [
+        "wolverhampton",
+        "wolves",
+        "вулверхэмптон"
+      ]
+    },
+    {
+      "id": "leeds",
+      "tier": "second",
+      "aliases": [
+        "leeds united",
+        "leeds",
+        "лидс"
+      ]
+    },
+    {
+      "id": "leicester",
+      "tier": "second",
+      "aliases": [
+        "leicester",
+        "лестер"
+      ]
+    },
+    {
+      "id": "southampton",
+      "tier": "second",
+      "aliases": [
+        "southampton",
+        "саутгемптон"
+      ]
+    },
+    {
+      "id": "brentford",
+      "tier": "second",
+      "aliases": [
+        "brentford",
+        "брентфорд"
+      ]
+    },
+    {
+      "id": "palace",
+      "tier": "second",
+      "aliases": [
+        "crystal palace"
+      ]
+    },
+    {
+      "id": "real-madrid",
+      "tier": "top",
+      "aliases": [
+        "real madrid",
+        "реал мадрид",
+        "реала",
+        "реал",
+        "реалу",
+        "реалом",
+        "реале"
+      ]
+    },
+    {
+      "id": "barcelona",
+      "tier": "top",
+      "aliases": [
+        "barcelona",
+        "barca",
+        "барселон*",
+        "барса",
+        "барсы",
+        "барсе",
+        "барсу",
+        "барсой"
+      ]
+    },
+    {
+      "id": "atletico",
+      "tier": "top",
+      "aliases": [
+        "atletico madrid",
+        "atlético madrid",
+        "atletico",
+        "атлетико"
+      ]
+    },
+    {
+      "id": "athletic",
+      "tier": "second",
+      "aliases": [
+        "athletic bilbao",
+        "athletic club",
+        "атлетик бильбао"
+      ]
+    },
+    {
+      "id": "real-sociedad",
+      "tier": "second",
+      "aliases": [
+        "real sociedad",
+        "реал сосьедад"
+      ]
+    },
+    {
+      "id": "betis",
+      "tier": "second",
+      "aliases": [
+        "real betis",
+        "betis",
+        "бетис"
+      ]
+    },
+    {
+      "id": "sevilla",
+      "tier": "second",
+      "aliases": [
+        "sevilla",
+        "севиль*"
+      ]
+    },
+    {
+      "id": "valencia",
+      "tier": "second",
+      "aliases": [
+        "valencia",
+        "валенси*"
+      ]
+    },
+    {
+      "id": "villarreal",
+      "tier": "second",
+      "aliases": [
+        "villarreal",
+        "вильярреал"
+      ]
+    },
+    {
+      "id": "girona",
+      "tier": "second",
+      "aliases": [
+        "girona",
+        "жирона"
+      ]
+    },
+    {
+      "id": "juventus",
+      "tier": "top",
+      "aliases": [
+        "juventus",
+        "ювентус"
+      ]
+    },
+    {
+      "id": "inter",
+      "tier": "top",
+      "aliases": [
+        "inter milan",
+        "internazionale",
+        "интер милан",
+        "интер"
+      ]
+    },
+    {
+      "id": "milan",
+      "tier": "top",
+      "aliases": [
+        "ac milan",
+        "milan",
+        "милан"
+      ]
+    },
+    {
+      "id": "napoli",
+      "tier": "top",
+      "aliases": [
+        "napoli",
+        "наполи"
+      ]
+    },
+    {
+      "id": "roma",
+      "tier": "top",
+      "aliases": [
+        "as roma",
+        "roma",
+        "рома"
+      ]
+    },
+    {
+      "id": "lazio",
+      "tier": "second",
+      "aliases": [
+        "lazio",
+        "лацио"
+      ]
+    },
+    {
+      "id": "atalanta",
+      "tier": "second",
+      "aliases": [
+        "atalanta",
+        "аталанта"
+      ]
+    },
+    {
+      "id": "fiorentina",
+      "tier": "second",
+      "aliases": [
+        "fiorentina",
+        "фиорентина"
+      ]
+    },
+    {
+      "id": "como",
+      "tier": "second",
+      "aliases": [
+        "como",
+        "комо"
+      ]
+    },
+    {
+      "id": "bayern",
+      "tier": "top",
+      "aliases": [
+        "bayern",
+        "бавари*"
+      ]
+    },
+    {
+      "id": "dortmund",
+      "tier": "top",
+      "aliases": [
+        "dortmund",
+        "borussia dortmund",
+        "дортмунд"
+      ]
+    },
+    {
+      "id": "leverkusen",
+      "tier": "top",
+      "aliases": [
+        "leverkusen",
+        "леверкузен"
+      ]
+    },
+    {
+      "id": "leipzig",
+      "tier": "second",
+      "aliases": [
+        "rb leipzig",
+        "leipzig",
+        "лейпциг"
+      ]
+    },
+    {
+      "id": "frankfurt",
+      "tier": "second",
+      "aliases": [
+        "eintracht",
+        "frankfurt",
+        "франкфурт"
+      ]
+    },
+    {
+      "id": "stuttgart",
+      "tier": "second",
+      "aliases": [
+        "stuttgart",
+        "штутгарт"
+      ]
+    },
+    {
+      "id": "psg",
+      "tier": "top",
+      "aliases": [
+        "psg",
+        "paris saint-germain",
+        "paris saint germain",
+        "псж",
+        "париж сен-жермен",
+        "пари сен-жермен"
+      ]
+    },
+    {
+      "id": "marseille",
+      "tier": "second",
+      "aliases": [
+        "marseille",
+        "марсель"
+      ]
+    },
+    {
+      "id": "lyon",
+      "tier": "second",
+      "aliases": [
+        "lyon",
+        "олимпик лион",
+        "лион"
+      ]
+    },
+    {
+      "id": "monaco",
+      "tier": "second",
+      "aliases": [
+        "monaco",
+        "монако"
+      ]
+    },
+    {
+      "id": "lille",
+      "tier": "second",
+      "aliases": [
+        "lille",
+        "лилль"
+      ]
+    },
+    {
+      "id": "porto",
+      "tier": "second",
+      "aliases": [
+        "fc porto",
+        "porto",
+        "порту"
+      ]
+    },
+    {
+      "id": "benfica",
+      "tier": "second",
+      "aliases": [
+        "benfica",
+        "бенфик*"
+      ]
+    },
+    {
+      "id": "sporting",
+      "tier": "second",
+      "aliases": [
+        "sporting cp",
+        "спортинг"
+      ]
+    },
+    {
+      "id": "ajax",
+      "tier": "second",
+      "aliases": [
+        "ajax",
+        "аякс"
+      ]
+    },
+    {
+      "id": "psv",
+      "tier": "second",
+      "aliases": [
+        "psv",
+        "псв"
+      ]
+    },
+    {
+      "id": "feyenoord",
+      "tier": "second",
+      "aliases": [
+        "feyenoord",
+        "фейеноорд"
+      ]
+    },
+    {
+      "id": "celtic",
+      "tier": "second",
+      "aliases": [
+        "celtic",
+        "селтик"
+      ]
+    },
+    {
+      "id": "rangers",
+      "tier": "second",
+      "aliases": [
+        "rangers",
+        "рейнджерс"
+      ]
+    },
+    {
+      "id": "galatasaray",
+      "tier": "top",
+      "aliases": [
+        "galatasaray",
+        "галатасара*"
+      ]
+    },
+    {
+      "id": "fenerbahce",
+      "tier": "second",
+      "aliases": [
+        "fenerbahce",
+        "fenerbahçe",
+        "фенерахче",
+        "фенербахче"
+      ]
+    },
+    {
+      "id": "besiktas",
+      "tier": "second",
+      "aliases": [
+        "besiktas",
+        "beşiktaş",
+        "бешикташ"
+      ]
+    },
+    {
+      "id": "shakhtar",
+      "tier": "second",
+      "aliases": [
+        "shakhtar",
+        "шахтер",
+        "шахтёр"
+      ]
+    },
+    {
+      "id": "dynamo-kyiv",
+      "tier": "second",
+      "aliases": [
+        "dynamo kyiv",
+        "dynamo kiev",
+        "динамо киев"
+      ]
+    },
+    {
+      "id": "al-hilal",
+      "tier": "second",
+      "aliases": [
+        "al hilal",
+        "al-hilal",
+        "аль-хиляль",
+        "аль хиляль"
+      ]
+    },
+    {
+      "id": "al-nassr",
+      "tier": "second",
+      "aliases": [
+        "al nassr",
+        "al-nassr",
+        "аль-наср",
+        "аль наср"
+      ]
+    },
+    {
+      "id": "inter-miami",
+      "tier": "second",
+      "aliases": [
+        "inter miami",
+        "интер майами"
+      ]
+    },
+    {
+      "id": "flamengo",
+      "tier": "second",
+      "aliases": [
+        "flamengo",
+        "фламенго"
+      ]
+    },
+    {
+      "id": "river",
+      "tier": "second",
+      "aliases": [
+        "river plate",
+        "ривер плейт"
+      ]
+    },
+    {
+      "id": "boca",
+      "tier": "second",
+      "aliases": [
+        "boca juniors",
+        "бока хуниорс"
+      ]
+    },
+    {
+      "id": "bolton",
+      "tier": "second",
+      "aliases": [
+        "bolton",
+        "болтон"
+      ]
+    },
+    {
+      "id": "middlesbrough",
+      "tier": "second",
+      "aliases": [
+        "middlesbrough",
+        "мидлсбро"
+      ]
+    },
+    {
+      "id": "freiburg",
+      "tier": "second",
+      "aliases": [
+        "freiburg",
+        "фрайбург"
+      ]
+    },
+    {
+      "id": "augsburg",
+      "tier": "second",
+      "aliases": [
+        "augsburg",
+        "аугсбург"
+      ]
+    },
+    {
+      "id": "rennes",
+      "tier": "second",
+      "aliases": [
+        "stade rennais",
+        "rennes",
+        "ренн"
+      ]
+    },
+    {
+      "id": "osasuna",
+      "tier": "second",
+      "aliases": [
+        "osasuna",
+        "осасуна"
+      ]
+    },
+    {
+      "id": "braga",
+      "tier": "second",
+      "aliases": [
+        "sc braga",
+        "braga",
+        "брага"
+      ]
+    },
+    {
+      "id": "salzburg",
+      "tier": "second",
+      "aliases": [
+        "salzburg",
+        "зальцбург"
+      ]
+    },
+    {
+      "id": "young-boys",
+      "tier": "second",
+      "aliases": [
+        "young boys",
+        "янг бойз"
+      ]
+    },
+    {
+      "id": "copenhagen",
+      "tier": "second",
+      "aliases": [
+        "fc copenhagen",
+        "copenhagen",
+        "копенгаген"
+      ]
+    },
+    {
+      "id": "club-brugge",
+      "tier": "second",
+      "aliases": [
+        "club brugge",
+        "club bruges",
+        "брюгге"
+      ]
+    },
+    {
+      "id": "trabzonspor",
+      "tier": "second",
+      "aliases": [
+        "trabzonspor",
+        "трабзонспор"
+      ]
+    },
+    {
+      "id": "bologna",
+      "tier": "second",
+      "aliases": [
+        "bologna",
+        "болонья"
+      ]
+    },
+    {
+      "id": "sampdoria",
+      "tier": "second",
+      "aliases": [
+        "sampdoria",
+        "сампдория"
+      ]
+    }
+  ],
+  "competitions": [
+    {
+      "id": "premier-league",
+      "aliases": [
+        "premier league",
+        "английская премьер",
+        "апл"
+      ]
+    },
+    {
+      "id": "laliga",
+      "aliases": [
+        "la liga",
+        "ла лига"
+      ]
+    },
+    {
+      "id": "serie-a",
+      "aliases": [
+        "serie a",
+        "серия a",
+        "серия а"
+      ]
+    },
+    {
+      "id": "bundesliga",
+      "aliases": [
+        "bundesliga",
+        "бундеслиг"
+      ]
+    },
+    {
+      "id": "ligue1",
+      "aliases": [
+        "ligue 1",
+        "лига 1"
+      ]
+    },
+    {
+      "id": "ucl",
+      "aliases": [
+        "champions league",
+        "лига чемпионов",
+        "лиге чемпионов"
+      ]
+    },
+    {
+      "id": "uel",
+      "aliases": [
+        "europa league",
+        "лига европы",
+        "лиге европы"
+      ]
+    },
+    {
+      "id": "uecl",
+      "aliases": [
+        "conference league",
+        "лига конференций"
+      ]
+    },
+    {
+      "id": "world-cup",
+      "aliases": [
+        "world cup",
+        "чемпионат мира",
+        "чм-"
+      ]
+    },
+    {
+      "id": "euros",
+      "aliases": [
+        "euro 20",
+        "european championship",
+        "чемпионат европы"
+      ]
+    },
+    {
+      "id": "copa-america",
+      "aliases": [
+        "copa america",
+        "копа америк"
+      ]
+    },
+    {
+      "id": "ballon-dor",
+      "aliases": [
+        "ballon d'or",
+        "ballon dor",
+        "золотой мяч"
+      ]
+    }
+  ],
+  "domestic_ru": [
+    "рпл",
+    "первая лига",
+    "кубок россии",
+    "фнл"
+  ],
+  "domestic_stems": [
+    "зенит",
+    "спартак",
+    "цска",
+    "локомотив",
+    "краснодар",
+    "динамо москва",
+    "ахмат",
+    "рубин",
+    "крылья советов"
+  ],
+  "other_sports": [
+    "nba",
+    "nfl",
+    "nhl",
+    "нхл",
+    "хоккей",
+    "баскетбол",
+    "теннис",
+    "формула",
+    "волейбол",
+    "биатлон",
+    "ufc",
+    "mma",
+    "боксер",
+    "регби",
+    "крикет",
+    "гандбол"
+  ],
+  "football_words": [
+    "football",
+    "soccer",
+    "футбол*",
+    "гол",
+    "гола",
+    "матч*",
+    "тренер*",
+    "клуб*",
+    "сборн*",
+    "трансфер*",
+    "травм*",
+    "пенальти",
+    "офсайд"
+  ]
+}
