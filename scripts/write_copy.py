@@ -106,8 +106,18 @@ def normalize(data: dict, source: str, summary: str = "") -> dict:
     spans = []
     for span in data.get("bold_spans") or []:
         text = str(span).strip()
-        if text and text in body and text not in spans:
+        if not text or text not in body or text in spans:
+            continue
+        if re.search(r"\d", text) or text == person_span(body):
             spans.append(text)
+    if not spans and body:
+        match = re.search(
+            r"\d+\s*(?:очк(?:а|ов|у)?|points?\s+clear|points?\s+ahead)|\d+\s*[:\–\-]\s*\d+",
+            body,
+            flags=re.IGNORECASE,
+        )
+        if match and match.group(0) in body:
+            spans.append(match.group(0))
     if not spans and body:
         match = re.search(r"\d+\s*[:\–\-]\s*\d+|\d+", body)
         if match and match.group(0) in body:

@@ -9,18 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from newsagent.branding import pick_template  # noqa: E402
-from newsagent.custom_emoji import pick_custom  # noqa: E402
+from newsagent.custom_emoji import clubs_for_emoji, pick_custom  # noqa: E402
 from newsagent.emoji_sync import catalog_path  # noqa: E402
-from newsagent.lexicon import find_ids, load_lexicon  # noqa: E402
 from newsagent.runtime import read_json, repo_root, write_json  # noqa: E402
-
-
-def clubs_with_copy(clubs: list[str], copy_text: str) -> list[str]:
-    merged = list(clubs)
-    for club in find_ids(copy_text, load_lexicon()["clubs"]):
-        if club not in merged:
-            merged.append(club)
-    return merged
 
 
 def main() -> int:
@@ -32,8 +23,7 @@ def main() -> int:
         run_dir = repo_root() / run_dir
     story = read_json(run_dir / "story.json")
     copy = read_json(run_dir / "copy.json") if (run_dir / "copy.json").exists() else {}
-    copy_text = " ".join([copy.get("title") or "", *(copy.get("paragraphs") or [])])
-    story = {**story, "clubs": clubs_with_copy(story.get("clubs") or [], copy_text)}
+    story = {**story, "clubs": clubs_for_emoji(story.get("clubs") or [], copy)}
     template = pick_template(story, copy)
     catalog = read_json(catalog_path())
     try:

@@ -1042,3 +1042,57 @@ category: other
 
 ### Fixer resolution
 - pending
+
+## INC-20261102-1935-fn-copy-other
+status: fixed
+run_date: 2026-11-02
+role: fn-copy
+run_id: R-20261102-193226
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В начале заголовка должны стоять гербы «Арсенала» и «Ливерпуля» (воскресный матч и суть колонки), а не «Манчестер Сити» и «Ливерпуль» — поправь порядок клубов в story.json (arsenal, liverpool первыми среди клубов с гербами в каталоге) и перезапусти place_emoji.; Жирным выделена не та подстрока: «победа над «Ливерпулем»» — не счёт, сумма, срок и не имя; добавь в абзац ключевую цифру из источника (отрыв в 3 очка на вершине таблицы) и укажи её в bold_spans.
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- Порядок клубов для гербов и ужесточение bold_spans — см. INC-20261102-1936-fn-copy-other.
+
+## INC-20261102-1936-fn-copy-other
+status: fixed
+run_date: 2026-11-02
+role: fn-copy
+run_id: R-20261102-193226
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В начале заголовка стоят два одинаковых флага Англии (fallback 🏴󠁧󠁢󠁥󠁮󠁧󠁿), а не гербы клубов из FC_logos; для этой новости нужны герб «Арсенала» и герб «Ливерпуля» (победа на «Анфилде» — ядро сюжета).; Сейчас в emoji.json к заголовку привязаны man-city и liverpool без «Арсенала», хотя заголовок и абзац целиком про «Арсенал»; замени пару title_emoji на arsenal + liverpool с корректными custom_emoji_id из FC_logos.
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- `clubs_for_emoji` в custom_emoji.py: клубы из copy.json первыми; place_emoji обновляет story.json; гербы arsenal + liverpool вместо man-city + liverpool.

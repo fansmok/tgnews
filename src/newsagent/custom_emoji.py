@@ -3,6 +3,24 @@ from __future__ import annotations
 import zlib
 
 from newsagent.emoji_sync import ALLOWED_PACKS
+from newsagent.lexicon import find_ids, load_lexicon
+
+
+def clubs_for_emoji(story_clubs: list[str], copy: dict) -> list[str]:
+    """Клубы из заголовка и абзацев поста идут первыми — так в title ставятся нужные гербы."""
+    lexicon = load_lexicon()["clubs"]
+    ordered: list[str] = []
+    title = str(copy.get("title") or "")
+    body = " ".join(part for part in (copy.get("paragraphs") or []) if part)
+    for text in (title, body):
+        for club in find_ids(text, lexicon):
+            if club not in ordered:
+                ordered.append(club)
+    for club in story_clubs:
+        if club not in ordered:
+            ordered.append(club)
+    return ordered
+
 
 TOPIC_FALLBACKS = {
     "result": ["⚽️", "🏆", "🥅", "🥇"],
