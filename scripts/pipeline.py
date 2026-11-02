@@ -25,6 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from newsagent.design_review import extreme_design_issues  # noqa: E402
 from newsagent.difficulties import collect_difficulties, report_difficulty  # noqa: E402
 from newsagent.runtime import load_dotenv, read_json, repo_root, write_json  # noqa: E402
 
@@ -264,8 +265,20 @@ def stage_rework(args) -> int:
             payload["status"] = "needs_llm_copy"
             return emit(payload, 3)
     else:
+        extreme = extreme_design_issues(issues)
+        if not extreme:
+            write_json(run_dir / "critic.json", {"verdict": "PASS", "target": "", "issues": []})
+            return emit(
+                {"stage": "rework", "status": "kept", "target": "fn-design", "reason": "card_usable"},
+                0,
+            )
         result = design_chain(args.run_dir, force=True)
-        report(run_dir, "fn-design", ["REWORK критика: " + "; ".join(issues)] + result["problems"], recovered="карточка пересобрана")
+        report(
+            run_dir,
+            "fn-design",
+            ["REWORK критика: " + "; ".join(extreme)] + result["problems"],
+            recovered="карточка пересобрана",
+        )
         payload = summary(run_dir, None, result)
     payload["stage"] = "rework"
     (run_dir / "critic.json").unlink(missing_ok=True)
