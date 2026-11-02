@@ -31,8 +31,10 @@ def test_baseline_day_without_ads_has_six_flexible_slots_in_bands():
     assert moments == sorted(moments)
     for moment in moments:
         assert regular_slot_window(DAY, moment) is not None
-        assert moment.hour >= 10
         assert moment.hour <= 22 or (moment.hour == 22 and moment.minute <= 30)
+    first = moments[0]
+    assert (first.hour, first.minute) >= (9, 30)
+    assert (first.hour, first.minute) <= (10, 45)
 
 
 def test_baseline_is_stable_for_the_same_day():
@@ -67,6 +69,22 @@ def test_broadcast_ad_timing():
     assert reasons["21:55"] == "broadcast_overwrite"
     assert reasons["22:25"] == "broadcast_overwrite"
     assert reasons["23:10"] == "broadcast_overwrite"
+
+
+def test_first_post_does_not_start_before_0930():
+    target = baseline_slots(DAY)[0]
+    assert (target.hour, target.minute) >= (9, 30)
+    assert (target.hour, target.minute) <= (10, 45)
+    too_early = datetime(DAY.year, DAY.month, DAY.day, 9, 0, tzinfo=MSK)
+    early = next_publish(too_early, [], set())
+    assert early is not None
+    assert early["publish_at"] == target
+    assert early["prepare"] is False
+    opened = datetime(DAY.year, DAY.month, DAY.day, 9, 30, tzinfo=MSK)
+    ready = next_publish(opened, [], set())
+    assert ready is not None
+    assert ready["publish_at"] == target
+    assert ready["prepare"] is True
 
 
 def test_prepare_true_inside_regular_band_even_before_target_minute():
