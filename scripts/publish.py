@@ -33,6 +33,34 @@ def mime_of(path: Path) -> str:
     return guessed or "application/octet-stream"
 
 
+def user_session_ready() -> bool:
+    return bool(
+        os.environ.get("TELEGRAM_STRING_SESSION")
+        and os.environ.get("TELEGRAM_API_ID")
+        and os.environ.get("TELEGRAM_API_HASH")
+    )
+
+
+def caption_has_custom_emoji(caption: dict) -> bool:
+    return any(
+        item.get("type") == "custom_emoji" and str(item.get("custom_emoji_id") or "").isdigit()
+        for item in (caption.get("entities") or [])
+    )
+
+
+def resolve_publish_backend(context: dict, caption: dict) -> tuple[str, str]:
+    preferred = (context.get("publish_backend") or os.environ.get("PUBLISH_BACKEND") or "bot").strip() or "bot"
+    if preferred not in {"bot", "user"}:
+        preferred = "bot"
+    if caption_has_custom_emoji(caption):
+        if user_session_ready():
+            return "user", ""
+        return preferred, "custom emoji в посте: нужны PUBLISH_BACKEND=user и TELEGRAM_STRING_SESSION"
+    if preferred == "user" and not user_session_ready():
+        return preferred, "PUBLISH_BACKEND=user, но сессия Telethon не настроена"
+    return preferred, ""
+
+
 def safe_error(exc: Exception) -> str:
     if isinstance(exc, httpx.HTTPStatusError):
         return f"Telegram HTTP {exc.response.status_code}"
@@ -173,7 +201,20 @@ def main() -> int:
         print("dry_run")
         return 0
     schedule_at = publish_at if mode == "schedule" else None
-    backend = os.environ.get("PUBLISH_BACKEND", "bot").strip() or "bot"
+    backend, refuse = resolve_publish_backend(context, caption)
+    if refuse:
+        write_json(
+            result_path,
+            {
+                "status": "error",
+                "publish_at": iso(publish_at),
+                "reason": plan["reason"],
+                "mode": mode,
+                "detail": refuse,
+            },
+        )
+        print(f"REFUSE {refuse}")
+        return 1
     photo_path = run_dir / photo["file"]
     if not photo_path.exists():
         print("REFUSE designed image is missing")

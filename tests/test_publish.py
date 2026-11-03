@@ -33,3 +33,37 @@ def test_publish_error_never_exposes_bot_token(monkeypatch):
     detail = publish.safe_error(error)
     assert token not in detail
     assert detail == "Telegram request failed: RequestError"
+
+
+def test_resolve_backend_prefers_context_user_over_default_bot(monkeypatch):
+    publish = _publish_module()
+    monkeypatch.delenv("PUBLISH_BACKEND", raising=False)
+    monkeypatch.setenv("TELEGRAM_STRING_SESSION", "sess")
+    monkeypatch.setenv("TELEGRAM_API_ID", "1")
+    monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
+    caption = {"entities": [{"type": "bold", "offset": 0, "length": 1}]}
+    backend, refuse = publish.resolve_publish_backend({"publish_backend": "user"}, caption)
+    assert backend == "user"
+    assert refuse == ""
+
+
+def test_custom_emoji_forces_user_backend_when_session_ready(monkeypatch):
+    publish = _publish_module()
+    monkeypatch.setenv("PUBLISH_BACKEND", "bot")
+    monkeypatch.setenv("TELEGRAM_STRING_SESSION", "sess")
+    monkeypatch.setenv("TELEGRAM_API_ID", "1")
+    monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
+    caption = {"entities": [{"type": "custom_emoji", "offset": 0, "length": 2, "custom_emoji_id": "123"}]}
+    backend, refuse = publish.resolve_publish_backend({"publish_backend": "bot"}, caption)
+    assert backend == "user"
+    assert refuse == ""
+
+
+def test_custom_emoji_without_user_session_refuses(monkeypatch):
+    publish = _publish_module()
+    monkeypatch.setenv("PUBLISH_BACKEND", "bot")
+    monkeypatch.delenv("TELEGRAM_STRING_SESSION", raising=False)
+    caption = {"entities": [{"type": "custom_emoji", "offset": 0, "length": 2, "custom_emoji_id": "123"}]}
+    backend, refuse = publish.resolve_publish_backend({}, caption)
+    assert backend == "bot"
+    assert "PUBLISH_BACKEND=user" in refuse
