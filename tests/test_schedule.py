@@ -9,6 +9,7 @@ from newsagent.schedule import (
     delivery_mode,
     next_publish,
     regular_slot_window,
+    relocation_plan,
 )
 
 MSK = ZoneInfo("Europe/Moscow")
@@ -139,6 +140,25 @@ def test_two_ads_fill_every_overwrite_in_one_batch():
     taken = {overwrites[0]["publish_at"], overwrites[1]["publish_at"]}
     rest = batch_slots(afternoon, [at(13, 0), at(15, 0)], taken)
     assert len([item for item in rest if item["reason"] == "ad_overwrite"]) == 2
+
+
+def test_blocked_post_moves_to_the_next_free_minute():
+    now = datetime(DAY.year, DAY.month, DAY.day, 12, 10, tzinfo=MSK)
+    blocked = datetime(DAY.year, DAY.month, DAY.day, 13, 40, tzinfo=MSK)
+    kept = datetime(DAY.year, DAY.month, DAY.day, 19, 40, tzinfo=MSK)
+    plan = relocation_plan(
+        now,
+        [at(13, 0)],
+        [
+            {"publish_at": blocked, "message_id": "10", "run_id": "R-old"},
+            {"publish_at": kept, "message_id": "11", "run_id": "R-keep"},
+        ],
+    )
+    assert len(plan) == 1
+    assert plan[0]["status"] == "move"
+    assert plan[0]["from"] == blocked.replace(microsecond=0)
+    assert plan[0]["to"] == at(14, 0)["time"]
+    assert plan[0]["run_id"] == "R-old"
 
 
 def test_future_regular_post_is_scheduled():

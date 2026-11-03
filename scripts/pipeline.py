@@ -26,12 +26,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from newsagent.channels import delete_scheduled  # noqa: E402
 from newsagent.design_review import extreme_design_issues  # noqa: E402
 from newsagent.difficulties import collect_difficulties, report_difficulty  # noqa: E402
-from newsagent.memory import connect, list_scheduled, occupied_slots, remember_story, set_slot_status  # noqa: E402
-from newsagent.runtime import iso, load_dotenv, now_msk, parse_iso, read_json, repo_root, write_json  # noqa: E402
-from newsagent.schedule import batch_slots, in_blackout, next_publish  # noqa: E402
+from newsagent.memory import connect, list_scheduled, occupied_slots, remember_story  # noqa: E402
+from newsagent.runtime import iso, load_dotenv, now_msk, read_json, repo_root, write_json  # noqa: E402
+from newsagent.schedule import batch_slots, next_publish, relocation_plan  # noqa: E402
 
 HANDOFF = ROOT / ".cursor" / "football-news-handoff.md"
 
@@ -84,22 +83,34 @@ def _load_ads(run_dir: Path) -> list:
     return payload.get("items") or payload.get("slots") or []
 
 
-def _release_blocked(ads: list) -> list[dict]:
+def _move_blocked(ads: list) -> list[dict]:
+    """Переносит уже готовый пост с паузы на свободную минуту. Текст и карточка те же."""
     conn = connect(repo_root() / "memory" / "news.db")
-    chat = os.environ.get("NEWS_CHANNEL_ID", "").strip()
-    cancelled = []
-    now = now_msk()
-    for row in list_scheduled(conn):
-        moment = parse_iso(row["publish_at"])
-        if moment <= now or not in_blackout(moment, ads):
+    moved = []
+    for item in relocation_plan(now_msk(), ads, list_scheduled(conn)):
+        if item["status"] != "move":
+            moved.append({"from": iso(item["from"]), "status": item["status"]})
             continue
-        removed = delete_scheduled(chat, row["message_id"]) if row["message_id"] else True
-        if not removed:
-            cancelled.append({"publish_at": iso(moment), "status": "cancel_failed"})
-            continue
-        set_slot_status(conn, moment, "skipped", "cancel", "")
-        cancelled.append({"publish_at": iso(moment), "status": "cancelled"})
-    return cancelled
+        code, out = run(
+            "move_slot.py",
+            "--run-id",
+            item["run_id"],
+            "--from",
+            iso(item["from"]),
+            "--to",
+            iso(item["to"]),
+            "--message-id",
+            item.get("message_id") or "",
+        )
+        moved.append(
+            {
+                "from": iso(item["from"]),
+                "to": iso(item["to"]),
+                "status": "moved" if code == 0 else "move_failed",
+                "detail": out if code else "",
+            }
+        )
+    return moved
 
 
 def stage_day(args) -> int:
@@ -123,7 +134,7 @@ def stage_day(args) -> int:
     ads = _load_ads(run_dir)
     shutil.rmtree(run_dir, ignore_errors=True)
     conn = connect(repo_root() / "memory" / "news.db")
-    cancelled = _release_blocked(ads)
+    cancelled = _move_blocked(ads)
     now = now_msk()
     slots = [
         {"publish_at": iso(item["publish_at"]), "reason": item["reason"]}
@@ -137,12 +148,12 @@ def stage_day(args) -> int:
                 "status": "idle",
                 "next_publish_at": iso(plan["publish_at"]) if plan.get("publish_at") else None,
                 "reason": plan.get("reason"),
-                "cancelled": cancelled,
+                "moved": cancelled,
             },
             2,
         )
     return emit(
-        {"stage": args.stage, "status": "batch", "slots": slots, "cancelled": cancelled, "count": len(slots)},
+        {"stage": args.stage, "status": "batch", "slots": slots, "moved": cancelled, "count": len(slots)},
         0,
     )
 
