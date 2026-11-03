@@ -23,7 +23,10 @@ is_background: false
      - код 1: `rework` по `failed_checks` не больше 2 раз; не помогло — следующий слот.
    - Task `fn-critic`. `REJECT` — следующий слот. REWORK → `rework` и снова критик, не больше 2 раз. `status=kept` — карточку не пересобирать.
    - `python3 scripts/pipeline.py publish --run-dir <run_dir>`
+     - `status=duplicate`: сюжет уже в ленте или отложке канала. Не публиковать, не обходить — следующий слот.
+     - `status=error` с `user session`: отложка возможна только с user-сессии, бот её не умеет. Не переключай `PUBLISH_BACKEND=bot` и не повторяй вручную через Bot API.
    Один пустой или бракованный слот не отменяет остальные.
+   Записи `stories` и `slots` в `memory/news.db` не удаляй и не сбрасывай: так возвращаются дубли.
 3. После последнего слота: `python3 scripts/pipeline.py finish --run-dir <последний run_dir>`. `fixer=needed` — Task `fn-fixer`; `skip` — конец.
 
 Промпт любого Task — 2 строки: роль и `run_dir`. Правила роль читает сама.

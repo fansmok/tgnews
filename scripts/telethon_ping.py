@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Проверка MTProto-сессии user-аккаунта (нужна для отложки и premium через Telethon)."""
+"""Проверка user-сессии Telethon: без неё нет отложки и premium custom emoji."""
 from __future__ import annotations
 
 import os
@@ -18,38 +18,20 @@ def main() -> int:
         if not os.environ.get(key, "").strip():
             print(f"ERROR missing {key}")
             return 1
-    from telethon.sessions import StringSession
-    from telethon.sync import TelegramClient
+    from newsagent.telegram_user import connect_user
 
-    proxy = os.environ.get("TELEGRAM_PROXY", "").strip()
-    proxy_arg = None
-    if proxy:
-        cleaned = proxy.replace("socks5://", "")
-        host, _, port = cleaned.partition(":")
-        proxy_arg = ("socks5", host, int(port or "1080"))
-    client = TelegramClient(
-        StringSession(os.environ["TELEGRAM_STRING_SESSION"]),
-        int(os.environ["TELEGRAM_API_ID"]),
-        os.environ["TELEGRAM_API_HASH"],
-        proxy=proxy_arg,
-        connection_retries=1,
-        auto_reconnect=False,
-        timeout=25,
-    )
     try:
-        client.connect()
-        if not client.is_connected():
-            print("ERROR telethon connect failed")
-            return 1
-        me = client.get_me()
-        print(f"OK telethon user_id={me.id}")
-        return 0
+        client = connect_user()
     except Exception as exc:  # noqa: BLE001
         print(f"ERROR telethon {exc.__class__.__name__}: {str(exc)[:200]}")
         return 1
+    try:
+        me = client.get_me()
+        transport = type(client._sender._connection).__name__ if client._sender._connection else "?"
+        print(f"OK telethon user_id={me.id} premium={bool(me.premium)} transport={transport}")
+        return 0
     finally:
-        if client.is_connected():
-            client.disconnect()
+        client.disconnect()
 
 
 if __name__ == "__main__":

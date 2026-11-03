@@ -273,3 +273,49 @@ def test_stories_older_than_two_days_are_forgotten(tmp_path):
     assert is_duplicate(conn, same)[0] is False
     left = conn.execute("SELECT COUNT(*) FROM stories").fetchone()[0]
     assert left == 0
+
+
+def test_picked_story_blocks_other_batch_slot_but_not_its_own_publish(tmp_path):
+    from newsagent.memory import pick_story_record
+
+    conn = connect(tmp_path / "news.db")
+    today = datetime.now(MSK).date().isoformat()
+    picked = {
+        "url": "https://sports.ru/football/calafiori-real",
+        "title": "«Реал» следит за Калафьори",
+        "event_key": f"{today}|transfer|arsenal,real-madrid",
+        "action": "transfer",
+    }
+    assert pick_story_record(conn, picked) is True
+    other_source = dict(picked, url="https://championat.com/calafiori", title="«Реал Мадрид» интересуется Калафьори")
+    assert is_duplicate(conn, other_source)[0] is True
+    assert is_duplicate(conn, picked)[0] is True
+    assert is_duplicate(conn, picked, own=True)[0] is False
+    assert reserve_story(conn, picked) is True
+    release_story_reservation(conn, picked)
+    assert reserve_story(conn, picked) is True
+
+
+def test_post_duplicate_matches_channel_titles():
+    from newsagent.memory import post_duplicate
+
+    assert post_duplicate(
+        "🇪🇸 «Реал Мадрид» интересуется левым защитником «Арсенала» Калафьори",
+        "🇪🇸 «Реал» следит за левым защитником «Арсенала» Калафьори",
+    )
+    assert post_duplicate(
+        "🇹🇷 🇮🇹 Габриэл Сара из «Галатасарая» интересен «Роме»",
+        "🇹🇷 🇮🇹 «Рома» заинтересовалась центральным полузащитником «Галатасарая» Габриэлом Сарой",
+    )
+    assert post_duplicate(
+        "Гарри Кейн сообщил, что новый контракт с «Баварией» чрезвычайно близок",
+        "Новый контракт Кейна с «Баварией» крайне близок и будет оформлен в ближайшие дни",
+    )
+    assert not post_duplicate(
+        "🚨 «Вест Хэм» уволил главного тренера Нуну Эшпириту Санту",
+        "🏴 Как Артета выжимает максимум из Деклана Райса",
+    )
+    assert not post_duplicate(
+        "Олисе тренировался перед матчем с «Атлетико»",
+        "«Ливерпуль» хочет оформить трансфер Араухо в январе",
+    )

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Публикует готовые run_dir дневной пачки (critic PASS), если publish ещё не удался.
 
-Запускать на машине, где работает Telethon (PUBLISH_BACKEND=user): Cloud Agent часто
-не поднимает MTProto, а Bot API в канале игнорирует schedule_date.
+Нужен PUBLISH_BACKEND=user: Bot API в канале игнорирует schedule_date.
 """
 from __future__ import annotations
 
