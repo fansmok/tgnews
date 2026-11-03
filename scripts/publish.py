@@ -33,6 +33,10 @@ def mime_of(path: Path) -> str:
     return guessed or "application/octet-stream"
 
 
+PUBLISH_ATTEMPTS = 3
+PUBLISH_RETRY_DELAY_SEC = 3
+
+
 def safe_error(exc: Exception) -> str:
     if isinstance(exc, httpx.HTTPStatusError):
         return f"Telegram HTTP {exc.response.status_code}"
@@ -43,6 +47,42 @@ def safe_error(exc: Exception) -> str:
     if token:
         text = text.replace(token, "[redacted]")
     return text[:500]
+
+
+def transient_publish_error(exc: Exception) -> bool:
+    if isinstance(exc, httpx.TimeoutException):
+        return True
+    if isinstance(exc, httpx.TransportError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        code = exc.response.status_code
+        return code == 429 or code >= 500
+    if isinstance(exc, (ConnectionError, TimeoutError, OSError)):
+        return True
+    lowered = str(exc).lower()
+    return any(
+        needle in lowered
+        for needle in (
+            "server closed the connection",
+            "incompleteread",
+            "connection reset",
+            "connection aborted",
+            "temporarily unavailable",
+        )
+    )
+
+
+def send_with_retries(send):
+    last: Exception | None = None
+    for attempt in range(PUBLISH_ATTEMPTS):
+        try:
+            return send()
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            if attempt >= PUBLISH_ATTEMPTS - 1 or not transient_publish_error(exc):
+                raise
+            time.sleep(PUBLISH_RETRY_DELAY_SEC * (attempt + 1))
+    raise last or RuntimeError("publish failed")
 
 
 def send_bot(chat: str, photo: Path, caption: str, schedule_at: int | None) -> dict:
@@ -186,20 +226,25 @@ def main() -> int:
         return 1
     try:
         if backend == "user":
-            sent = send_user(
-                os.environ["NEWS_CHANNEL_ID"],
-                photo_path,
-                caption["plain"],
-                caption["entities"],
-                schedule_at,
+            sent = send_with_retries(
+                lambda: send_user(
+                    os.environ["NEWS_CHANNEL_ID"],
+                    photo_path,
+                    caption["plain"],
+                    caption["entities"],
+                    schedule_at,
+                )
             )
             message_id = str(getattr(sent, "id", ""))
         else:
-            sent = send_bot(
-                os.environ["NEWS_CHANNEL_ID"],
-                photo_path,
-                caption["html"],
-                int(schedule_at.timestamp()) if schedule_at else None,
+            schedule_stamp = int(schedule_at.timestamp()) if schedule_at else None
+            sent = send_with_retries(
+                lambda: send_bot(
+                    os.environ["NEWS_CHANNEL_ID"],
+                    photo_path,
+                    caption["html"],
+                    schedule_stamp,
+                )
             )
             message_id = str(sent.get("message_id", ""))
     except Exception as exc:  # noqa: BLE001

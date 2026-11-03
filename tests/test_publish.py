@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import httpx
+import pytest
 
 from newsagent.runtime import write_json
 
@@ -33,3 +34,40 @@ def test_publish_error_never_exposes_bot_token(monkeypatch):
     detail = publish.safe_error(error)
     assert token not in detail
     assert detail == "Telegram request failed: RequestError"
+
+
+def test_transient_publish_error_detects_dropped_connection():
+    publish = _publish_module()
+    exc = RuntimeError(
+        "Server closed the connection: 146 bytes read on a total of 1347703872 expected bytes"
+    )
+    assert publish.transient_publish_error(exc)
+
+
+def test_send_with_retries_succeeds_after_transient_failure(monkeypatch):
+    publish = _publish_module()
+    monkeypatch.setattr(publish, "PUBLISH_RETRY_DELAY_SEC", 0)
+    calls = {"count": 0}
+
+    def flaky():
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise RuntimeError("Server closed the connection")
+        return {"message_id": 42}
+
+    assert publish.send_with_retries(flaky) == {"message_id": 42}
+    assert calls["count"] == 2
+
+
+def test_send_with_retries_does_not_retry_permanent_errors(monkeypatch):
+    publish = _publish_module()
+    monkeypatch.setattr(publish, "PUBLISH_RETRY_DELAY_SEC", 0)
+    calls = {"count": 0}
+
+    def bad():
+        calls["count"] += 1
+        raise RuntimeError("chat not found")
+
+    with pytest.raises(RuntimeError, match="chat not found"):
+        publish.send_with_retries(bad)
+    assert calls["count"] == 1
