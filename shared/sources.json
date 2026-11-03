@@ -45,5 +45,11 @@
       "weight": 5
     }
   ],
-  "telegram_channels": []
+  "telegram_max_age_hours": 24,
+  "rss_fallback": false,
+  "telegram_channels": [
+    {"username": "goaltime2026", "weight": 8, "strip_lines": ["GOALTIME"]},
+    {"username": "nakorotke1", "weight": 8},
+    {"username": "tutoffside", "weight": 8}
+  ]
 }
