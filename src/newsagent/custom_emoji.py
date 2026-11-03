@@ -121,15 +121,42 @@ def _paragraphs(copy: dict, title: dict, second: dict | None) -> list[dict | Non
     return paragraph_emoji
 
 
+def _unicode_club(tag: str) -> dict:
+    return {"custom_emoji_id": "", "fallback": "⚽", "tags": [tag], "set_name": "unicode_fallback"}
+
+
+def _title_logos(items: list[dict], club_keys: list[str]) -> list[dict]:
+    tagged = _tagged_logos(items, club_keys)
+    by_tag = {tag: _logo_entry(item, tag) for item, tag in tagged}
+    title: list[dict] = []
+    for key in club_keys[:2]:
+        title.append(by_tag.get(key) or _unicode_club(key))
+    return title
+
+
 def pick_custom(story: dict, copy: dict, template: str, catalog: dict) -> dict:
     items = [item for item in catalog.get("items") or [] if item.get("set_name") in ALLOWED_PACKS]
     topic = _topic(template, story)
     symbols = TOPIC_FALLBACKS.get(topic, TOPIC_FALLBACKS["main"])
     url = (story or {}).get("url") or (copy or {}).get("title") or topic
     chosen = _choose(items, symbols, story, url) or _choose(items, TOPIC_FALLBACKS["main"], story, url)
-    logos = _tagged_logos(items, list((story or {}).get("clubs") or []))
+    club_keys = list((story or {}).get("clubs") or [])
+    logos = _tagged_logos(items, club_keys)
     if not logos:
         logos = _tagged_logos(items, list((story or {}).get("competitions") or []))
+    if len(club_keys) >= 2:
+        title_list = _title_logos(items, club_keys)
+        title = title_list
+        used_ids = {e.get("custom_emoji_id") for e in title if e.get("custom_emoji_id")}
+        second = _entry(chosen, topic) if chosen and chosen["custom_emoji_id"] not in used_ids else None
+        paragraphs = [part for part in (copy or {}).get("paragraphs") or [] if part and part.strip()]
+        paragraph_emoji: list[dict | None] = []
+        for index, _paragraph in enumerate(paragraphs):
+            if index == 0 and second:
+                paragraph_emoji.append(second)
+            else:
+                paragraph_emoji.append(None)
+        return {"title_emoji": title, "paragraph_emoji": paragraph_emoji}
     if logos:
         if len(logos) > 1:
             title = [_logo_entry(*logos[0]), _logo_entry(*logos[1])]

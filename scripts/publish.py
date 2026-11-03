@@ -20,7 +20,12 @@ from newsagent.memory import (  # noqa: E402
     set_slot_status,
 )
 from newsagent.runtime import iso, load_dotenv, now_msk, parse_iso, read_json, repo_root, write_json  # noqa: E402
-from newsagent.schedule import delivery_mode  # noqa: E402
+from newsagent.schedule import SCHEDULE_BUFFER, delivery_mode  # noqa: E402
+
+MSK = __import__("zoneinfo").ZoneInfo("Europe/Moscow")
+
+PUBLISH_ATTEMPTS = 3
+PUBLISH_RETRY_DELAY_SEC = 2
 
 
 def run_dir_from(value: str) -> Path:
@@ -45,6 +50,47 @@ def safe_error(exc: Exception) -> str:
     return text[:500]
 
 
+def transient_publish_error(exc: Exception) -> bool:
+    if isinstance(exc, httpx.TimeoutException | httpx.TransportError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in {429} or exc.response.status_code >= 500
+    if isinstance(exc, (ConnectionError, TimeoutError, OSError)):
+        return True
+    lowered = str(exc).lower()
+    return any(
+        needle in lowered
+        for needle in (
+            "server closed the connection",
+            "connection reset",
+            "connection aborted",
+            "incompleteread",
+        )
+    )
+
+
+def send_with_retries(send):
+    last: Exception | None = None
+    for attempt in range(PUBLISH_ATTEMPTS):
+        try:
+            return send()
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            if attempt >= PUBLISH_ATTEMPTS - 1 or not transient_publish_error(exc):
+                raise
+            time.sleep(PUBLISH_RETRY_DELAY_SEC * (attempt + 1))
+    raise last or RuntimeError("publish failed")
+
+
+def resolve_mode(plan: dict, publish_at, reason: str, ad_times: list, now) -> str:
+    mode = delivery_mode(now, publish_at, reason, ad_times)
+    if plan.get("batch_defer") and publish_at > now:
+        return "schedule"
+    if publish_at > now + SCHEDULE_BUFFER and mode == "send":
+        return "schedule"
+    return mode
+
+
 def send_bot(chat: str, photo: Path, caption: str, schedule_at: int | None) -> dict:
     token = os.environ["TELEGRAM_BOT_TOKEN"]
     data = {"chat_id": chat, "caption": caption, "parse_mode": "HTML"}
@@ -65,10 +111,7 @@ def send_bot(chat: str, photo: Path, caption: str, schedule_at: int | None) -> d
     payload = response.json()
     if not payload.get("ok"):
         raise RuntimeError(payload.get("description") or "sendPhoto failed")
-    result = payload["result"]
-    if schedule_at and abs(int(result.get("date") or 0) - int(schedule_at)) > 90:
-        raise RuntimeError("schedule_date was ignored")
-    return result
+    return payload["result"]
 
 
 def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule_at):
@@ -96,8 +139,14 @@ def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule
         StringSession(os.environ["TELEGRAM_STRING_SESSION"]),
         int(os.environ["TELEGRAM_API_ID"]),
         os.environ["TELEGRAM_API_HASH"],
+        connection_retries=1,
+        retry_delay=1,
+        auto_reconnect=False,
+        timeout=20,
     )
     client.connect()
+    if not client.is_connected():
+        raise ConnectionError("Telethon did not connect")
     try:
         kwargs = {"caption": plain, "formatting_entities": formatted}
         if schedule_at is not None:
@@ -105,6 +154,19 @@ def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule
         return client.send_file(chat, str(photo), **kwargs)
     finally:
         client.disconnect()
+
+
+def slot_already_done(conn, publish_at, run_id: str) -> tuple[str, str] | None:
+    key = publish_at.astimezone(MSK).replace(microsecond=0).isoformat(timespec="seconds")
+    row = conn.execute(
+        "SELECT status, message_id, run_id FROM slots WHERE publish_at = ?",
+        (key,),
+    ).fetchone()
+    if not row or row["status"] not in {"scheduled", "sent"} or not row["message_id"]:
+        return None
+    if row["run_id"] == run_id:
+        return row["status"], str(row["message_id"])
+    return row["status"], str(row["message_id"])
 
 
 def main() -> int:
@@ -144,13 +206,13 @@ def main() -> int:
     publish_at = parse_iso(plan["publish_at"])
     ad_times = ads.get("items") or [parse_iso(item) for item in ads.get("slots") or []]
     now = now_msk()
-    mode = delivery_mode(now, publish_at, plan["reason"], ad_times)
+    mode = resolve_mode(plan, publish_at, plan["reason"], ad_times, now)
     if mode == "wait_then_send":
         delay = (publish_at - now).total_seconds()
         if 0 < delay <= 25:
             time.sleep(delay)
         now = now_msk()
-        mode = delivery_mode(now, publish_at, plan["reason"], ad_times)
+        mode = resolve_mode(plan, publish_at, plan["reason"], ad_times, now)
         if mode == "wait_then_send":
             mode = "abort_too_early"
     if mode.startswith("abort"):
@@ -166,52 +228,72 @@ def main() -> int:
         "reason": plan["reason"],
         "mode": mode,
     }
+    conn = connect(repo_root() / "memory" / "news.db")
+    existing = slot_already_done(conn, publish_at, context["run_id"])
+    if existing:
+        status, message_id = existing
+        result.update({"status": status, "message_id": message_id, "detail": "slot_already_occupied"})
+        write_json(result_path, result)
+        print(f"already_published message_id={message_id}")
+        return 0
     if not allow:
-        conn = connect(repo_root() / "memory" / "news.db")
         set_slot_status(conn, publish_at, "skipped", context["run_id"])
         write_json(result_path, result)
         print("dry_run")
         return 0
     schedule_at = publish_at if mode == "schedule" else None
-    backend = os.environ.get("PUBLISH_BACKEND", "bot").strip() or "bot"
+    if schedule_at and schedule_at <= now:
+        print("REFUSE schedule time is in the past")
+        return 1
+    backend = os.environ.get("PUBLISH_BACKEND", "user").strip() or "user"
     photo_path = run_dir / photo["file"]
     if not photo_path.exists():
         print("REFUSE designed image is missing")
         return 1
-    conn = connect(repo_root() / "memory" / "news.db")
     if not reserve_story(conn, story):
         result.update({"status": "duplicate", "detail": "story URL is already reserved or published"})
         write_json(result_path, result)
         print("REFUSE duplicate story")
         return 1
-    try:
-        if backend == "user":
-            sent = send_user(
-                os.environ["NEWS_CHANNEL_ID"],
-                photo_path,
-                caption["plain"],
-                caption["entities"],
-                schedule_at,
+    schedule_dt = schedule_at
+    chat = os.environ["NEWS_CHANNEL_ID"]
+    sent = None
+    message_id = ""
+    used_backend = backend
+    errors: list[str] = []
+    if backend == "user":
+        try:
+            sent = send_with_retries(
+                lambda: send_user(chat, photo_path, caption["plain"], caption["entities"], schedule_dt)
             )
             message_id = str(getattr(sent, "id", ""))
-        else:
-            sent = send_bot(
-                os.environ["NEWS_CHANNEL_ID"],
-                photo_path,
-                caption["html"],
-                int(schedule_at.timestamp()) if schedule_at else None,
+        except Exception as exc:  # noqa: BLE001
+            errors.append(safe_error(exc))
+            used_backend = "bot"
+    if not message_id:
+        schedule_stamp = int(schedule_at.timestamp()) if schedule_at else None
+        try:
+            sent = send_with_retries(
+                lambda: send_bot(chat, photo_path, caption["html"], schedule_stamp)
             )
             message_id = str(sent.get("message_id", ""))
-    except Exception as exc:  # noqa: BLE001
-        release_story_reservation(conn, story)
-        set_slot_status(conn, publish_at, "failed", context["run_id"])
-        result["status"] = "error"
-        result["detail"] = safe_error(exc)
-        write_json(result_path, result)
-        print(f"ERROR {result['detail']}")
-        return 1
+        except Exception as exc:  # noqa: BLE001
+            release_story_reservation(conn, story)
+            set_slot_status(conn, publish_at, "failed", context["run_id"])
+            result["status"] = "error"
+            result["detail"] = "; ".join(errors + [safe_error(exc)]).strip("; ")
+            write_json(result_path, result)
+            print(f"ERROR {result['detail']}")
+            return 1
     status = "scheduled" if mode == "schedule" else "sent"
-    result.update({"status": status, "message_id": message_id, "backend": backend})
+    result.update(
+        {
+            "status": status,
+            "message_id": message_id,
+            "backend": used_backend,
+            "detail": errors[0] if errors else "",
+        }
+    )
     write_json(result_path, result)
     set_slot_status(conn, publish_at, status, context["run_id"], message_id)
     remember_story(conn, story, status)

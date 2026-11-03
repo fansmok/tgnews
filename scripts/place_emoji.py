@@ -16,8 +16,11 @@ from newsagent.runtime import read_json, repo_root, write_json  # noqa: E402
 
 
 def clubs_with_copy(clubs: list[str], copy_text: str) -> list[str]:
-    merged = list(clubs)
-    for club in find_ids(copy_text, load_lexicon()["clubs"]):
+    from_copy = find_ids(copy_text, load_lexicon()["clubs"])
+    if len(from_copy) >= 2:
+        return from_copy[:2]
+    merged = list(from_copy)
+    for club in clubs:
         if club not in merged:
             merged.append(club)
     return merged

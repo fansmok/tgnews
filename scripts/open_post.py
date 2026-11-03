@@ -44,6 +44,7 @@ def main() -> int:
             "prepare": True,
             "seconds_until": int((moment - now).total_seconds()),
             "in_blackout_now": False,
+            "batch_defer": True,
             "now": iso(now),
         },
     )
