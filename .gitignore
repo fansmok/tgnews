@@ -29,3 +29,4 @@ memory/last-push.json
 memory/ads-inbox.json
 memory/sportonkp-posts.jsonl
 memory/cron-gate.log
+memory/cron-gate.state
