@@ -284,6 +284,16 @@ def _now() -> str:
     return datetime.now(MSK).isoformat(timespec="seconds")
 
 
+def list_scheduled(conn: sqlite3.Connection) -> list[dict]:
+    rows = conn.execute(
+        "SELECT publish_at, message_id, run_id FROM slots WHERE status = 'scheduled'"
+    ).fetchall()
+    return [
+        {"publish_at": row["publish_at"], "message_id": row["message_id"] or "", "run_id": row["run_id"] or ""}
+        for row in rows
+    ]
+
+
 def occupied_slots(conn: sqlite3.Connection) -> set[datetime]:
     rows = conn.execute(
         "SELECT publish_at, status, updated_at FROM slots WHERE status IN ('preparing', 'scheduled', 'sent')"
