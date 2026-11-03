@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from newsagent.runtime import clock_status, load_dotenv, now_msk, repo_root  # noqa: E402
+from newsagent.mtproto import is_cursor_cloud, probe_mtproto, publish_needs_mtproto  # noqa: E402
 
 REQUIRED_DIRS = [
     "agents",
@@ -127,6 +128,17 @@ def main() -> int:
     for name in ENV_OPTIONAL:
         state = "configured" if os.environ.get(name, "").strip() else "missing"
         print(f"OK env {name} {state}")
+
+    if publish_needs_mtproto():
+        ok, detail = probe_mtproto()
+        if ok:
+            print("OK mtproto Telethon connect")
+        elif is_cursor_cloud():
+            print(f"ERROR mtproto {detail}")
+            errors += 1
+        else:
+            print(f"WARN mtproto {detail}")
+            warnings += 1
 
     catalog = root / "shared" / "emoji-catalog.json"
     try:

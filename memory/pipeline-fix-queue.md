@@ -1179,3 +1179,137 @@ category: script
 ### Fixer resolution
 - fixed
 - resolve_publish_backend берёт backend из context, custom emoji принудительно на user при готовой сессии. Без сессии — отказ до sendPhoto. tests/test_publish.py.
+
+## INC-20261103-1156-fn-publish-other
+status: fixed
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-1600-ad_
+severity: medium
+category: other
+
+### What went wrong
+- публикация: error 146 bytes read on a total of 1347703872 expected bytes
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- Тот же IncompleteReadError MTProto на Cloud Agent. doctor.py останавливает gate; publish.py — retry и понятная ошибка. См. INC-20261103-1200-fn-publish-other.
+
+## INC-20261103-1158-fn-publish-other
+status: fixed
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-1630-ad_
+severity: medium
+category: other
+
+### What went wrong
+- публикация: error 146 bytes read on a total of 1347703872 expected bytes
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- См. INC-20261103-1200-fn-publish-other.
+
+## INC-20261103-1159-fn-publish-other
+status: fixed
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-1800-ad_
+severity: medium
+category: other
+
+### What went wrong
+- публикация: error 146 bytes read on a total of 1347703872 expected bytes
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1200-fn-director-other
+status: fixed
+run_date: 2026-11-03
+role: fn-director
+run_id: R-20261103-1830-ad_
+severity: high
+category: other
+
+### What went wrong
+- Отложенная публикация через Telethon в Cloud Agent недоступна: MTProto IncompleteReadError на connect.
+
+### How the agent recovered this run
+- Посты собраны и прошли критика; publish.py падает за ~1 с с ошибкой соединения.
+
+### Durable fix needed before next run
+- Запускать automation fn-director на private worker (Mac) или публиковать с машины где MTProto доступен.
+
+### Suggested files to inspect/change
+- `scripts/publish.py`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- `src/newsagent/mtproto.py`: probe на gate (doctor ERROR в Cloud Agent), retry в publish, подсказка про private worker. Runbook и agents/fn-director.md. Automation на default cloud без worker не публикует — нужен self-hosted worker или publish с Mac/VPS.
+
+## INC-20261103-1200-fn-publish-other
+status: fixed
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-1830-ad_
+severity: medium
+category: other
+
+### What went wrong
+- публикация: error 146 bytes read on a total of 1347703872 expected bytes
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- IncompleteReadError на connect Telethon. `format_mtproto_error`, `run_connected` с retry, ранний ERROR в doctor при CURSOR_AGENT. tests/test_mtproto.py, tests/test_publish.py.

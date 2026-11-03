@@ -20,6 +20,7 @@ from newsagent.memory import (  # noqa: E402
     set_slot_status,
 )
 from newsagent.runtime import iso, load_dotenv, now_msk, parse_iso, read_json, repo_root, write_json  # noqa: E402
+from newsagent.mtproto import format_mtproto_error, run_connected  # noqa: E402
 from newsagent.schedule import delivery_mode  # noqa: E402
 
 
@@ -66,6 +67,9 @@ def safe_error(exc: Exception) -> str:
         return f"Telegram HTTP {exc.response.status_code}"
     if isinstance(exc, httpx.RequestError):
         return f"Telegram request failed: {exc.__class__.__name__}"
+    name = exc.__class__.__name__
+    if "IncompleteReadError" in name or "Telethon" in name or "146 bytes read" in str(exc):
+        return format_mtproto_error(exc)
     text = str(exc)
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     if token:
@@ -100,8 +104,6 @@ def send_bot(chat: str, photo: Path, caption: str, schedule_at: int | None) -> d
 
 
 def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule_at):
-    from telethon.sessions import StringSession
-    from telethon.sync import TelegramClient
     from telethon.tl.types import (
         MessageEntityBlockquote,
         MessageEntityBold,
@@ -120,27 +122,14 @@ def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule
             formatted.append(MessageEntityCustomEmoji(item["offset"], item["length"], int(item["custom_emoji_id"])))
         else:
             formatted.append(mapping[item["type"]](item["offset"], item["length"]))
-    client = TelegramClient(
-        StringSession(os.environ["TELEGRAM_STRING_SESSION"]),
-        int(os.environ["TELEGRAM_API_ID"]),
-        os.environ["TELEGRAM_API_HASH"],
-        timeout=15,
-        connection_retries=2,
-        retry_delay=1,
-        auto_reconnect=False,
-    )
-    client.connect()
-    if not client.is_connected():
-        raise RuntimeError("Telethon connect failed")
-    if not client.is_user_authorized():
-        raise RuntimeError("Telethon session is not authorized")
-    try:
+
+    def _send(client):
         kwargs = {"caption": plain, "formatting_entities": formatted}
         if schedule_at is not None:
             kwargs["schedule"] = schedule_at
         return client.send_file(chat, str(photo), **kwargs)
-    finally:
-        client.disconnect()
+
+    return run_connected(_send)
 
 
 def main() -> int:

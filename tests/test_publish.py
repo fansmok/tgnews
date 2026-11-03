@@ -35,6 +35,18 @@ def test_publish_error_never_exposes_bot_token(monkeypatch):
     assert detail == "Telegram request failed: RequestError"
 
 
+def test_safe_error_maps_incomplete_read_on_cloud(monkeypatch):
+    publish = _publish_module()
+    monkeypatch.setenv("CURSOR_AGENT", "1")
+    monkeypatch.setenv("CLOUD_AGENT_INJECTED_SECRET_NAMES", "TELEGRAM_BOT_TOKEN")
+    import asyncio
+
+    err = asyncio.IncompleteReadError(b"x" * 146, 1347703872)
+    detail = publish.safe_error(err)
+    assert "MTProto" in detail
+    assert "private worker" in detail
+
+
 def test_resolve_backend_prefers_context_user_over_default_bot(monkeypatch):
     publish = _publish_module()
     monkeypatch.delenv("PUBLISH_BACKEND", raising=False)
