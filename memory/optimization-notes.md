@@ -33,3 +33,5 @@
 - **R-opt-test**: замечен перерасход: Kie retry/fallback occurred: Image fetch failed. Check access settings or use our File Upload API instead.
 
 - **R-20261102-183808**: замечен перерасход: retry/difficulty in role fn-design: REWORK критика: На карточке внизу чужой бренд GOL88.RU — убрать водяной знак/логотип, без рекламы на фото.; На ноге Олисе видны артефакты генерации (деформация голени/стопы) — другой кадр или перегенерация без брака.; В начале заголовка поста — два герба клубов «Атлетико» и «Бавария», не флаги 🇪🇸/🇩🇪 (если правится текст/emoji — через produce).
+
+- **R-20261103-1830-ad_**: замечен перерасход: retry/difficulty in role fn-director: Отложенная публикация через Telethon в Cloud Agent недоступна: MTProto IncompleteReadError на connect.; retry/difficulty in role fn-publish: публикация: error 146 bytes read on a total of 1347703872 expected bytes
