@@ -82,3 +82,14 @@ def test_merge_story_clubs_adds_second_club_from_copy():
         "Вратарь «Манчестер Юнайтед» и нападающий «Портсмута» вызваны в сборную.",
     )
     assert merged == ["man-utd", "portsmouth"]
+
+
+def test_merge_story_clubs_ignores_a_table_of_clubs():
+    from newsagent.lexicon import merge_story_clubs
+
+    merged = merge_story_clubs(
+        ["arsenal"],
+        "Суперкомпьютер не видит конкурентов «Арсеналу»",
+        "1. Арсенал - 68,2%\n2. Борнмут - 0,4%\n3. Тоттенхэм - 0,1%\n4. Брентфорд - 0,2%",
+    )
+    assert merged == ["arsenal"]

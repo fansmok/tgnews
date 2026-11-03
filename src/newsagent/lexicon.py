@@ -63,7 +63,9 @@ def merge_story_clubs(clubs: list[str], *texts: str, lexicon: dict | None = None
         if not (text or "").strip():
             continue
         found = find_ids(text, entries)
-        if len(found) >= 2:
+        if len(found) > 2:
+            continue
+        if len(found) == 2:
             return found[:2]
         for club in found:
             if club not in merged:
