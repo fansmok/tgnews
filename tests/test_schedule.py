@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from newsagent.schedule import (
     DAILY_REGULAR_POSTS,
     baseline_slots,
+    batch_slots,
     day_slots,
     delivery_mode,
     next_publish,
@@ -23,7 +24,7 @@ def labels(slots):
     return [item.strftime("%H:%M") for item, _reason in slots]
 
 
-def test_baseline_day_without_ads_has_six_flexible_slots_in_bands():
+def test_baseline_day_without_ads_has_four_windows():
     slots = day_slots(DAY, [])
     assert len(slots) == DAILY_REGULAR_POSTS
     assert all(reason == "regular" for _item, reason in slots)
@@ -34,7 +35,12 @@ def test_baseline_day_without_ads_has_six_flexible_slots_in_bands():
         assert moment.hour <= 22 or (moment.hour == 22 and moment.minute <= 30)
     first = moments[0]
     assert (first.hour, first.minute) >= (9, 30)
-    assert (first.hour, first.minute) <= (10, 45)
+    assert (first.hour, first.minute) <= (10, 30)
+    assert (moments[1].hour, moments[1].minute) >= (13, 30)
+    assert (moments[1].hour, moments[1].minute) <= (14, 30)
+    assert (moments[2].hour, moments[2].minute) >= (16, 30)
+    assert (moments[3].hour, moments[3].minute) >= (19, 30)
+    assert (moments[3].hour, moments[3].minute) <= (20, 30)
 
 
 def test_baseline_is_stable_for_the_same_day():
@@ -52,8 +58,8 @@ def test_one_ad_adds_two_overwrites_and_keeps_morning_baseline():
     assert reasons.get("12:30") == "ad_overwrite"
     assert "11:00" not in reasons
     assert "11:30" not in reasons
-    regular_count = sum(1 for _m, r in slots if r == "regular")
-    assert regular_count >= 3
+    regulars = [item for item, reason in slots if reason == "regular"]
+    assert all(not (item.hour == 11) for item in regulars)
 
 
 def test_two_ads_expand_with_overwrites():
@@ -74,7 +80,7 @@ def test_broadcast_ad_timing():
 def test_first_post_does_not_start_before_0930():
     target = baseline_slots(DAY)[0]
     assert (target.hour, target.minute) >= (9, 30)
-    assert (target.hour, target.minute) <= (10, 45)
+    assert (target.hour, target.minute) <= (10, 30)
     too_early = datetime(DAY.year, DAY.month, DAY.day, 9, 0, tzinfo=MSK)
     early = next_publish(too_early, [], set())
     assert early is not None
@@ -110,6 +116,33 @@ def test_during_ad_the_next_post_is_the_exact_overwrite():
 def test_delivery_never_sends_inside_blackout():
     assert delivery_mode(at(11, 30)["time"], at(12, 0)["time"], "ad_overwrite", [at(11, 0)]) == "schedule"
     assert delivery_mode(at(11, 0)["time"], at(11, 0)["time"], "regular", [at(11, 0)]) == "abort_blackout"
+
+
+def test_morning_batch_lists_all_four_future_slots():
+    morning = datetime(DAY.year, DAY.month, DAY.day, 8, 30, tzinfo=MSK)
+    slots = batch_slots(morning, [])
+    assert len(slots) == 4
+    assert [item["reason"] for item in slots] == ["regular"] * 4
+    assert slots[0]["publish_at"].hour < 11
+    assert slots[-1]["publish_at"].hour >= 19
+
+
+def test_batch_does_not_start_before_morning():
+    assert batch_slots(datetime(DAY.year, DAY.month, DAY.day, 7, 0, tzinfo=MSK), []) == []
+
+
+def test_two_ads_fill_every_overwrite_in_one_batch():
+    afternoon = datetime(DAY.year, DAY.month, DAY.day, 12, 0, tzinfo=MSK)
+    slots = batch_slots(afternoon, [at(13, 0), at(15, 0)])
+    overwrites = [item for item in slots if item["reason"] == "ad_overwrite"]
+    assert len(overwrites) == 4
+    taken = {overwrites[0]["publish_at"], overwrites[1]["publish_at"]}
+    rest = batch_slots(afternoon, [at(13, 0), at(15, 0)], taken)
+    assert len([item for item in rest if item["reason"] == "ad_overwrite"]) == 2
+
+
+def test_future_regular_post_is_scheduled():
+    assert delivery_mode(at(8, 30)["time"], at(9, 40)["time"], "regular", []) == "schedule"
 
 
 def test_occupied_slot_moves_forward():

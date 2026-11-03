@@ -177,6 +177,20 @@ def load_messages(channel: str) -> tuple[list[dict], str]:
     raise RuntimeError("ADS_CHANNEL is private and TELEGRAM_STRING_SESSION is not configured")
 
 
+def delete_scheduled(chat: str, message_id: str) -> bool:
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    if not token or not chat or not message_id:
+        return False
+    response = httpx.post(
+        f"https://api.telegram.org/bot{token}/deleteMessage",
+        data={"chat_id": chat, "message_id": message_id},
+        timeout=20,
+    )
+    if response.status_code != 200:
+        return False
+    return bool(response.json().get("ok"))
+
+
 def normalize_messages(messages: list[dict]) -> list[dict]:
     normalized = []
     for message in messages:

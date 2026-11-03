@@ -9,7 +9,26 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from newsagent.memory import connect, is_duplicate  # noqa: E402
-from newsagent.runtime import load_dotenv, read_json, repo_root, write_json  # noqa: E402
+from newsagent.runtime import iso, load_dotenv, now_msk, read_json, repo_root, write_json  # noqa: E402
+
+BATCH_URLS = "memory/batch-urls.json"
+
+
+def batch_urls() -> set[str]:
+    path = repo_root() / BATCH_URLS
+    if not path.exists():
+        return set()
+    payload = read_json(path)
+    if payload.get("date") != now_msk().date().isoformat():
+        return set()
+    return set(payload.get("urls") or [])
+
+
+def remember_batch_url(url: str) -> None:
+    path = repo_root() / BATCH_URLS
+    urls = batch_urls()
+    urls.add(url)
+    write_json(path, {"date": now_msk().date().isoformat(), "urls": sorted(urls), "updated_at": iso(now_msk())})
 
 
 def main() -> int:
@@ -25,6 +44,7 @@ def main() -> int:
     exclude_path = run_dir / "exclude.json"
     if exclude_path.exists():
         exclude = set(read_json(exclude_path).get("urls") or [])
+    exclude |= batch_urls()
     conn = connect(repo_root() / "memory" / "news.db")
     skipped = []
     selected = None
@@ -50,6 +70,7 @@ def main() -> int:
         {"duplicate": False, "selected_url": selected["url"], "reason": "new", "skipped": skipped},
     )
     write_json(run_dir / "story.json", selected)
+    remember_batch_url(selected["url"])
     print(f"selected={selected['url']}")
     return 0
 

@@ -8,12 +8,12 @@
 
 Расписание cron на своей машине: каждые 15 минут с 09:00 до 23:59 МСК. Если cron в UTC, это `*/15 6-20 * * *`. Это расписание только для `cron_gate.sh`, не для Cloud Agent.
 
-Дешёвый режим: **не ставь** у Automation триггер по расписанию. Расписание каждые 15 минут поднимает Cloud Agent даже на `idle` и списывает токены. `scripts/cron_gate.sh` сам вызывает `pipeline.py gate` (это Python, 0 токенов). Коды: `0` = слот готов, `2` = рано, `1` = ошибка. Один и тот же `publish_at` будит агента один раз.
+Утро: один запуск Automation в 8:30 по Москве (`30 8 * * *`, если поле в Москве, или `30 5 * * *` в UTC). Он ставит все четыре поста отложкой. Дальше агент спит, пока Make не пришлёт вебхук о новой рекламе: тот же `day` добирает все перебития одним заходом. Почасовой и 15-минутный опрос не нужны.
 
 1. Automation: триггер только **Webhook**, без cron. Репозиторий `fansmok/tgnews`, ветка `main`, модель — самая дешёвая без длинного reasoning. Инструкция:
 
 ```text
-Выпуск футбольной новости по agents/fn-director.md. Начни с python3 scripts/pipeline.py gate. Если idle — сразу закончи одной строкой с next_publish_at. Иначе scout → produce → fn-critic → publish → finish. fn-copy и fn-fixer только по сигналу pipeline.
+Выпуск футбольной новости по agents/fn-director.md. Начни с python3 scripts/pipeline.py day. Если idle — сразу закончи. Если batch — подготовь все слоты из списка за этот один запуск и поставь отложкой. Рекламный триггер тоже начинает с day: он добирает все недостающие перебития сразу. fn-copy и fn-fixer только по сигналу pipeline.
 ```
 
 2. Сохрани Automation, скопируй webhook URL и ключ. В `.env` на машине, где крутится cron (не в git):
@@ -94,7 +94,7 @@ CRON_TZ=Europe/Moscow
 - **Instructions (промпт):**
 
 ```text
-Выпуск футбольной новости по agents/fn-director.md. Начни с python3 scripts/pipeline.py gate; если idle — сразу закончи одной строкой с next_publish_at. Иначе scout → produce → fn-critic → publish → finish; fn-copy и fn-fixer только по сигналу pipeline.
+Выпуск футбольной новости по agents/fn-director.md. Начни с python3 scripts/pipeline.py day. Если idle — сразу закончи. Если batch — все слоты из списка за этот запуск, отложкой. Реклама тоже через day и добирает все перебития сразу.
 ```
 
 Агент сам вызывает subagent **fn-critic** (обязательно для publish). Director не пишет текст и не подменяет критика.

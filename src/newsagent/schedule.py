@@ -17,16 +17,15 @@ BROADCAST_LEAD = timedelta(minutes=25)
 LATE_GRACE = timedelta(seconds=180)
 OVERWRITE_LATE = timedelta(minutes=20)
 SCHEDULE_BUFFER = timedelta(seconds=20)
-DAILY_REGULAR_POSTS = 6
-# Окна дня (не фиксированные часы): в каждом окне один пост в «случайную» минуту (стабильно на дату).
+DAILY_REGULAR_POSTS = 4
+# Четыре окна. Минута внутри окна стабильна на дату. Утро готовит все сразу и ставит отложку.
 POST_BANDS: tuple[tuple[int, int, int, int], ...] = (
-    (9, 30, 10, 45),
-    (11, 45, 13, 30),
-    (13, 30, 15, 15),
-    (15, 15, 17, 45),
-    (17, 45, 20, 15),
-    (20, 15, 22, 30),
+    (9, 30, 10, 30),
+    (13, 30, 14, 30),
+    (16, 30, 17, 30),
+    (19, 30, 20, 30),
 )
+BATCH_FROM = time(8, 0)
 
 
 def midnight(day: date) -> datetime:
@@ -63,8 +62,7 @@ def regular_slot_window(day: date, moment: datetime) -> tuple[datetime, datetime
         start, end = _band_bounds(day, band)
         if start <= moment <= end:
             # Первое окно само и есть время выхода: пост не уходит раньше 9:30.
-            lead = timedelta(0) if band == POST_BANDS[0] else REGULAR_LEAD
-            return start - lead, end + LATE_GRACE
+            return start, end + LATE_GRACE
     return None
 
 
@@ -190,6 +188,26 @@ def _should_prepare(now: datetime, day: date, publish_at: datetime, reason: str,
     return -LATE_GRACE <= delta <= REGULAR_LEAD
 
 
+def batch_slots(
+    now: datetime,
+    ads: list,
+    occupied: set[datetime] | None = None,
+) -> list[dict]:
+    """Все ещё не занятые слоты сегодняшнего дня, которые можно поставить отложкой."""
+    now = now.astimezone(MSK)
+    if now.timetz().replace(tzinfo=None) < BATCH_FROM:
+        return []
+    taken = {item.astimezone(MSK).replace(microsecond=0) for item in (occupied or set())}
+    ads_norm = _normalize_ads(ads)
+    pending: list[dict] = []
+    for moment, reason in day_slots(now.date(), ads_norm):
+        key = moment.replace(microsecond=0)
+        if key in taken or not _slot_still_open(now, now.date(), key, reason):
+            continue
+        pending.append({"publish_at": key, "reason": reason})
+    return pending
+
+
 def next_publish(
     now: datetime,
     ads: list,
@@ -236,6 +254,6 @@ def delivery_mode(now: datetime, publish_at: datetime, reason: str, ads: list) -
         if publish_at > now:
             return "wait_then_send"
         return "abort_blackout"
-    if (reason.startswith("ad_overwrite") or reason.startswith("broadcast_overwrite")) and publish_at - now > SCHEDULE_BUFFER:
+    if publish_at - now > SCHEDULE_BUFFER:
         return "schedule"
     return "send"

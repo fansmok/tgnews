@@ -30,3 +30,5 @@ memory/ads-inbox.json
 memory/sportonkp-posts.jsonl
 memory/cron-gate.log
 memory/cron-gate.state
+memory/batch-urls.json
+memory/day-ads.json
