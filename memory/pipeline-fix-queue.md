@@ -1042,3 +1042,293 @@ category: other
 
 ### Fixer resolution
 - pending
+
+## INC-20261103-1427-fn-publish-other
+status: open
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-1430-ad_
+severity: medium
+category: other
+
+### What went wrong
+- публикация: duplicate channel:post_words:feed:296
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1429-fn-critic-other
+status: open
+run_date: 2026-11-03
+role: fn-critic
+run_id: R-20261103-1600-ad_
+severity: low
+category: other
+
+### What went wrong
+- Неверный герб клуба в заголовке (Арсенал вместо Локомотива/Ахмата)
+
+### How the agent recovered this run
+- yes
+
+### Durable fix needed before next run
+- fn-copy: два герба клубов новости или ⚽
+
+### Suggested files to inspect/change
+- `caption.html`
+- `emoji.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1429-fn-copy-other
+status: open
+run_date: 2026-11-03
+role: fn-copy
+run_id: R-20261103-1600-ad_
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В начале заголовка стоит герб Арсенала (England flag), новость про «Локомотив» и «Ахмат» в РПЛ — нужны два герба этих клубов или два ⚽, если их нет в FC_logos
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1430-fn-critic-other
+status: open
+run_date: 2026-11-03
+role: fn-critic
+run_id: R-20261103-1600-ad_
+severity: low
+category: other
+
+### What went wrong
+- Снова неверные гербы в заголовке (Арсенал вместо Локомотива и Ахмата)
+
+### How the agent recovered this run
+- no
+
+### Durable fix needed before next run
+- fn-copy: два герба клубов новости или ⚽⚽
+
+### Suggested files to inspect/change
+- `caption.html`
+- `emoji.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1431-fn-copy-other
+status: open
+run_date: 2026-11-03
+role: fn-copy
+run_id: R-20261103-1600-ad_
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В начале заголовка один герб Арсенала (England flag); новость про «Локомотив» и «Ахмат» в РПЛ — поставь два герба этих клубов из FC_logos или два ⚽, если их нет в наборе
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1431-fn-critic-other
+status: open
+run_date: 2026-11-03
+role: fn-critic
+run_id: R-20261103-1600-ad_
+severity: low
+category: other
+
+### What went wrong
+- REWORK: неверный герб в заголовке (Арсенал вместо Локомотив/Ахмат)
+
+### How the agent recovered this run
+- yes
+
+### Durable fix needed before next run
+- fn-copy исправит emoji и имена клубов в абзаце
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1436-fn-publish-other
+status: open
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-1630-ad_
+severity: medium
+category: other
+
+### What went wrong
+- публикация: duplicate channel:post_title:feed:298
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1436-fn-critic-other
+status: open
+run_date: 2026-11-03
+role: fn-critic
+run_id: R-20261103-1830-ad_
+severity: low
+category: other
+
+### What went wrong
+- Два клуба в тексте, в заголовке один герб МЮ
+
+### How the agent recovered this run
+- yes
+
+### Durable fix needed before next run
+- fn-copy: второй знак ⚽ для Портсмута
+
+### Suggested files to inspect/change
+- `caption.html`
+- `emoji.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1436-fn-publish-other
+status: open
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-1800-ad_
+severity: medium
+category: other
+
+### What went wrong
+- публикация: duplicate channel:post_title:feed:300
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261103-1437-fn-copy-other
+status: fixed
+run_date: 2026-11-03
+role: fn-copy
+run_id: R-20261103-1830-ad_
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В новости два клуба («Манчестер Юнайтед» и «Портсмут») — в начале заголовка перед текстом нужны оба знака: premium-герб МЮ (как сейчас) и для «Портсмута» обычный ⚽ (герба нет в FC_logos).
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- В лексикон добавлен «Портсмут». `merge_story_clubs` в place_emoji подтягивает второй клуб из summary, source_text и copy; при двух клубах заголовок получает герб и ⚽, если герба нет в FC_logos.
+
+## INC-20261103-1437-fn-critic-other
+status: fixed
+run_date: 2026-11-03
+role: fn-critic
+run_id: R-20261103-1830-ad_
+severity: low
+category: other
+
+### What went wrong
+- REWORK: второй клуб без знака в заголовке
+
+### How the agent recovered this run
+- yes
+
+### Durable fix needed before next run
+- fn-copy добавит ⚽ для Портсмута
+
+### Suggested files to inspect/change
+- `memory/runs/R-20261103-1830-ad_/critic.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending

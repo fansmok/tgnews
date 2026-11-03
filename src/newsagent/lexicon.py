@@ -52,6 +52,25 @@ def find_ids(text: str, entries: list[dict]) -> list[str]:
     return found
 
 
+def merge_story_clubs(clubs: list[str], *texts: str, lexicon: dict | None = None) -> list[str]:
+    """Дополняет clubs из русского/английского текста поста и карточки (до двух клубов)."""
+    entries = (lexicon or load_lexicon())["clubs"]
+    merged: list[str] = []
+    for club in clubs:
+        if club not in merged:
+            merged.append(club)
+    for text in texts:
+        if not (text or "").strip():
+            continue
+        found = find_ids(text, entries)
+        if len(found) >= 2:
+            return found[:2]
+        for club in found:
+            if club not in merged:
+                merged.append(club)
+    return merged
+
+
 def detect_action(text: str) -> str:
     lowered = text.lower().replace("ё", "е")
     if SCORE_RE.search(lowered):

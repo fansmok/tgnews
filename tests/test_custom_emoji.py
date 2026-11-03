@@ -59,3 +59,29 @@ def test_result_uses_the_ball_from_the_football_pack():
     picked = pick_custom({"url": "https://example.com/match", "action": "result"}, {}, "result", CATALOG)
     assert picked["title_emoji"]["set_name"] == "foot_flags_by_fStikBot"
     assert picked["title_emoji"]["fallback"] == "⚽️"
+
+
+def test_second_club_without_crest_gets_unicode_ball_on_title():
+    catalog = {
+        "items": CATALOG["items"]
+        + [
+            {"custom_emoji_id": "90", "fallback": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "set_name": "FC_logos", "tags": ["man-utd"]},
+        ]
+    }
+    picked = pick_custom(
+        {
+            "url": "https://example.com/callups",
+            "action": "news",
+            "clubs": ["man-utd", "portsmouth"],
+        },
+        {"paragraphs": ["Ми и Кенни вызваны в сборную."]},
+        "main",
+        catalog,
+    )
+    assert isinstance(picked["title_emoji"], list)
+    assert len(picked["title_emoji"]) == 2
+    assert picked["title_emoji"][0]["set_name"] == "FC_logos"
+    assert picked["title_emoji"][0]["tags"] == ["man-utd"]
+    assert picked["title_emoji"][1]["set_name"] == "unicode_fallback"
+    assert picked["title_emoji"][1]["fallback"] == "⚽"
+    assert picked["title_emoji"][1]["tags"] == ["portsmouth"]
