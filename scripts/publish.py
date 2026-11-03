@@ -124,8 +124,16 @@ def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule
         StringSession(os.environ["TELEGRAM_STRING_SESSION"]),
         int(os.environ["TELEGRAM_API_ID"]),
         os.environ["TELEGRAM_API_HASH"],
+        timeout=15,
+        connection_retries=2,
+        retry_delay=1,
+        auto_reconnect=False,
     )
     client.connect()
+    if not client.is_connected():
+        raise RuntimeError("Telethon connect failed")
+    if not client.is_user_authorized():
+        raise RuntimeError("Telethon session is not authorized")
     try:
         kwargs = {"caption": plain, "formatting_entities": formatted}
         if schedule_at is not None:
