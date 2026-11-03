@@ -6,9 +6,9 @@ from pathlib import Path
 from PIL import Image
 
 from newsagent.caption import contains_ad, longest_common_run, mostly_cyrillic, render_post
-from newsagent.copytext import reaction_missing_words, repeats_quote, restates_title
+from newsagent.copytext import reaction_missing_words, repeats_quote, restates_title, statement_missing_content
 from newsagent.emoji_sync import ALLOWED_PACKS
-from newsagent.reactions import has_foreign_emoji
+from newsagent.reactions import has_foreign_emoji, mismatched_reaction
 from newsagent.lexicon import load_lexicon
 from newsagent.runtime import read_json
 
@@ -112,6 +112,8 @@ def machine_check(run_dir: Path) -> dict:
     comment = (voice.get("comment") or "").strip()
     if comment and has_foreign_emoji(comment):
         _fail(checks, "comment", "emoji outside the reaction list")
+    elif comment and mismatched_reaction(comment):
+        _fail(checks, "comment", f"смеющийся знак под согласием: {mismatched_reaction(comment)}")
     elif comment and len(comment) > 220:
         _fail(checks, "comment", "longer than 220")
     else:
@@ -128,6 +130,8 @@ def machine_check(run_dir: Path) -> dict:
     missing_speaker = reaction_missing_words(title, paragraphs, quote if isinstance(quote, dict) else None)
     if missing_speaker:
         _fail(checks, "reaction", f"нет слов {missing_speaker}")
+    elif statement_missing_content(title, paragraphs, quote if isinstance(quote, dict) else None):
+        _fail(checks, "reaction", "заявление без содержания: не сказано, что заявлено")
     else:
         _ok(checks, "reaction")
     if quote:

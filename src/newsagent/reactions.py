@@ -183,3 +183,20 @@ def clean_comment(text: str) -> str:
 def has_foreign_emoji(text: str) -> bool:
     _parts, foreign = split_comment(text or "")
     return foreign
+
+
+LAUGH = ("🤣", "😁", "🤡", "😂")
+_AGREE_WORDS = ("да", "прав", "верно", "согласен", "точно", "конечно", "красав", "заслужил")
+
+
+def mismatched_reaction(comment: str | None) -> str:
+    """Смех под строкой согласия («🤣 — да, он прав») читается как издёвка."""
+    for line in (comment or "").splitlines():
+        head, sep, tail = line.partition("—")
+        if not sep:
+            continue
+        symbol = head.strip()
+        words = tail.strip().lower().replace("ё", "е")
+        if any(mark in symbol for mark in LAUGH) and words.startswith(_AGREE_WORDS):
+            return line.strip()
+    return ""

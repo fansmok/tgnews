@@ -52,6 +52,22 @@ def find_ids(text: str, entries: list[dict]) -> list[str]:
     return found
 
 
+_ACTION_PATTERNS: dict[str, re.Pattern[str]] = {}
+
+# «переход» без границы слова ловил «переходные матчи», «sign» — «design», «deal» — «ideal».
+_TRANSFER_EXTRA = re.compile(
+    r"(?<!\w)(?:переход(?:а|е|ом|у|ы)?|перейд\w*|переш[её]л\w*)(?!\w)|(?<!\w)sign(?:s|ed|ing)?(?!\w)|(?<!\w)deal(?:s)?(?!\w)"
+)
+
+
+def _action_pattern(action: str, needles: list[str]) -> re.Pattern[str]:
+    if action not in _ACTION_PATTERNS:
+        skip = {"переход", "sign ", "signs", "signing", "deal"} if action == "transfer" else set()
+        parts = [rf"(?<!\w){re.escape(needle.strip())}" for needle in needles if needle not in skip]
+        _ACTION_PATTERNS[action] = re.compile("|".join(parts)) if parts else re.compile(r"(?!x)x")
+    return _ACTION_PATTERNS[action]
+
+
 def detect_action(text: str) -> str:
     lowered = text.lower().replace("ё", "е")
     if SCORE_RE.search(lowered):
@@ -59,7 +75,9 @@ def detect_action(text: str) -> str:
     for action, needles in ACTION_RULES:
         if action == "result":
             continue
-        if any(needle in lowered for needle in needles):
+        if _action_pattern(action, needles).search(lowered):
+            return action
+        if action == "transfer" and _TRANSFER_EXTRA.search(lowered):
             return action
     return "news"
 
