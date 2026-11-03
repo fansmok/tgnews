@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from newsagent.design_review import extreme_design_issues  # noqa: E402
 from newsagent.difficulties import collect_difficulties, report_difficulty  # noqa: E402
+from newsagent.memory import connect, remember_story  # noqa: E402
 from newsagent.runtime import load_dotenv, read_json, repo_root, write_json  # noqa: E402
 
 HANDOFF = ROOT / ".cursor" / "football-news-handoff.md"
@@ -215,6 +216,19 @@ def summary(run_dir: Path, copy: dict | None, design: dict | None) -> dict:
     return payload
 
 
+def reject_empty_reaction(run_dir: Path, payload: dict) -> bool:
+    if "reaction" not in (payload.get("failed_checks") or {}):
+        return False
+    story_path = run_dir / "story.json"
+    if story_path.exists():
+        story = read_json(story_path)
+        if story.get("url"):
+            remember_story(connect(repo_root() / "memory" / "news.db"), story, "rejected")
+    payload["status"] = "rejected"
+    payload["reason"] = "reaction_without_words"
+    return True
+
+
 def stage_produce(args) -> int:
     run_dir = resolve(args.run_dir)
     copy_ready = threading.Event()
@@ -228,6 +242,9 @@ def stage_produce(args) -> int:
     if copy.get("needs_llm_copy"):
         payload["status"] = "needs_llm_copy"
         return emit(payload, 3)
+    if reject_empty_reaction(run_dir, payload):
+        note("PRODUCE", ["rejected: нет слов первой стороны"])
+        return emit(payload, 2)
     payload["status"] = "ok" if payload["machine"] == "PASS" else "machine_fail"
     note("PRODUCE", [f"copy: {payload.get('copy')}", f"design: {payload.get('design_engine')}", f"machine: {payload['machine']}"])
     return emit(payload, 0 if payload["machine"] == "PASS" else 1)

@@ -16,8 +16,9 @@ is_background: false
 2. `python3 scripts/pipeline.py scout --run-dir <run_dir>` — код 2 (`no_news`/`slot_busy`): шаг 6.
 3. `python3 scripts/pipeline.py produce --run-dir <run_dir>`
    - код 3: Task `fn-copy` с `run_dir`, затем `pipeline.py after_copy --run-dir <run_dir>`.
+   - код 2 и `status=rejected` — в посте нет слов первой стороны. Не переписывай и не публикуй, шаг 6.
    - код 1 (`machine_fail`): `pipeline.py rework --run-dir <run_dir> --target fn-copy|fn-design` по `failed_checks` (emoji/текст → copy, фото → design), не больше 2 раз; не помогло — шаг 6.
-4. Task `fn-critic` с `run_dir`. REWORK → `pipeline.py rework --run-dir <run_dir> --target <target>`. Если ответ `status=kept` — карточка остаётся, критика второй раз не звать, сразу шаг 5. Иначе снова критик, всего не больше 2 возвратов. Картинку Kie не пересобирать из-за мелочей.
+4. Task `fn-critic` с `run_dir`. `REJECT` — не переписывай и не публикуй, шаг 6. REWORK → `pipeline.py rework --run-dir <run_dir> --target <target>`. Если ответ `status=kept` — карточка остаётся, критика второй раз не звать, сразу шаг 5. Иначе снова критик, всего не больше 2 возвратов. Картинку Kie не пересобирать из-за мелочей.
 5. `python3 scripts/pipeline.py publish --run-dir <run_dir>` (сам проверяет critic PASS и рекламную паузу).
 6. `python3 scripts/pipeline.py finish --run-dir <run_dir>` — `fixer=needed`: Task `fn-fixer` с `run_dir` и `brief`; `skip`: конец.
 

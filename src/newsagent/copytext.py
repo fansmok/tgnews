@@ -210,6 +210,66 @@ def detach_quote(title: str, paragraphs: list[str], quote_text: str) -> tuple[st
     return title.strip(), kept, quote
 
 
+_SPEAKER = re.compile(
+    r"(?:слова|словах|словам|заявлени[еяю]|реплик[уаие]|комментари[йяю])\s+([А-ЯЁ][а-яё]{3,})"
+)
+_SAID = re.compile(r"сказал|заявил|отметил|подчеркнул|написал|по словам|как сказал|как заявил")
+
+
+def _stem(name: str) -> str:
+    low = name.casefold().replace("ё", "е")
+    for ending in ("ого", "ему", "ой", "ей", "ом", "ем", "а", "я", "у", "ю", "ы", "и"):
+        if len(low) > len(ending) + 3 and low.endswith(ending):
+            return low[: -len(ending)]
+    return low
+
+
+def _speaker_is_quoted(text: str, stem: str) -> bool:
+    folded = text.casefold().replace("ё", "е")
+    for match in re.finditer(r"«[^»]{8,}»", text):
+        spoken = match.group(0)
+        if " " not in spoken:
+            continue
+        window = folded[max(0, match.start() - 80) : match.end() + 80]
+        if stem in window:
+            return True
+    return False
+
+
+def _speaker_states_it(text: str, stem: str) -> bool:
+    for sentence in re.split(r"[.!?]\n|[.!?]\s+", text):
+        folded = sentence.casefold().replace("ё", "е")
+        if stem not in folded or not _SAID.search(folded):
+            continue
+        if re.search(r"на слова|на заявление|на реплику|на комментарий", folded):
+            continue
+        return True
+    return False
+
+
+def reaction_missing_words(title: str, paragraphs: list[str], quote: dict | None) -> str:
+    """Реакция на чужие слова без самих слов. Пустая строка — пост понятен."""
+    body = " ".join([title, *[part for part in paragraphs if part]])
+    names = []
+    for match in _SPEAKER.finditer(body):
+        name = match.group(1)
+        if name not in names:
+            names.append(name)
+    if not names:
+        return ""
+    author = _stem((quote or {}).get("author") or "")
+    for name in names:
+        stem = _stem(name)
+        if not stem:
+            continue
+        if author.startswith(stem) or stem in ((quote or {}).get("author") or "").casefold().replace("ё", "е"):
+            continue
+        if _speaker_is_quoted(body, stem) or _speaker_states_it(body, stem):
+            continue
+        return name
+    return ""
+
+
 def repeats_quote(title: str, paragraphs: list[str], quote_text: str) -> bool:
     quote = _flat(quote_text)
     if len(quote) < 12:
