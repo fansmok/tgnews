@@ -208,6 +208,50 @@ def batch_slots(
     return pending
 
 
+def relocation_plan(now: datetime, ads: list, scheduled: list[dict]) -> list[dict]:
+    """Готовый отложенный пост в новой паузе переносится на свободную минуту, а не удаляется."""
+    now = now.astimezone(MSK)
+    ads_norm = _normalize_ads(ads)
+    blocked: list[dict] = []
+    staying: set[datetime] = set()
+    for row in scheduled:
+        moment = row["publish_at"]
+        if isinstance(moment, str):
+            moment = parse_iso(moment)
+        moment = moment.astimezone(MSK).replace(microsecond=0)
+        if moment <= now or not in_blackout(moment, ads_norm):
+            staying.add(moment)
+            continue
+        blocked.append({**row, "publish_at": moment})
+    blocked.sort(key=lambda item: item["publish_at"])
+    free: list[tuple[datetime, str]] = []
+    for day in (now.date(), now.date() + timedelta(days=1)):
+        for moment, reason in day_slots(day, ads_norm):
+            key = moment.replace(microsecond=0)
+            if key <= now or key in staying or in_blackout(key, ads_norm):
+                continue
+            free.append((key, reason))
+    used: set[datetime] = set()
+    plan: list[dict] = []
+    for row in blocked:
+        dest = next((item for item in free if item[0] not in used), None)
+        if dest is None:
+            plan.append({"from": row["publish_at"], "run_id": row.get("run_id") or "", "status": "no_slot"})
+            continue
+        used.add(dest[0])
+        plan.append(
+            {
+                "from": row["publish_at"],
+                "to": dest[0],
+                "reason": dest[1],
+                "run_id": row.get("run_id") or "",
+                "message_id": row.get("message_id") or "",
+                "status": "move",
+            }
+        )
+    return plan
+
+
 def next_publish(
     now: datetime,
     ads: list,
