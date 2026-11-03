@@ -85,3 +85,13 @@ def test_prompt_asks_for_the_key_name_when_there_is_no_number():
     )
     assert "ключевое имя человека" in text
     assert "Имя не выдумывай" in text
+
+
+def test_telegram_source_asks_for_a_light_rewrite_instead_of_keeping_the_post():
+    module = _write_copy()
+    story = {"title": "КАРРИК ОСТАЁТСЯ!", "summary": "Рассматривают Нагельсманна", "url": "https://t.me/goaltime2026/1"}
+    site = module.prompt(story, "Кэррик остаётся", "policy")
+    telegram = module.prompt({**story, "source_kind": "telegram"}, "Кэррик остаётся", "policy")
+    assert "лёгкий рерайт" in telegram and "без капса" in telegram
+    assert "почти оставь" not in telegram
+    assert "почти оставь" in site and "лёгкий рерайт" not in site
