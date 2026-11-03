@@ -1042,3 +1042,30 @@ category: other
 
 ### Fixer resolution
 - pending
+
+## INC-20261103-1052-fn-publish-other
+status: fixed
+run_date: 2026-11-03
+role: fn-publish
+run_id: R-20261103-103915
+severity: medium
+category: other
+
+### What went wrong
+- публикация: Server closed the connection: 146 bytes read on a total of 1347703872 expected bytes
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- `publish.py` повторяет sendPhoto/send_file до трёх раз при обрыве соединения, IncompleteRead и сетевых сбоях Telegram, с паузой между попытками. Пост R-20261103-103915 ушёл с message_id=296 после повтора вне скрипта.
