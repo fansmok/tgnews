@@ -6,6 +6,9 @@
 - Повтор уже выходившей новости: память смотрит URL, похожий заголовок и тот же матч.
 - Чужой клубный emoji. Набор `futbol_klub` нельзя ставить, если тег emoji не совпал с клубом новости.
 - Custom emoji ботом в канал без дополнительного username на Fragment. Для канала нужен `PUBLISH_BACKEND=user` и Premium-сессия либо Fragment.
+- Отложка ботом. Bot API в канале принимает `schedule_date`, но пост выходит сразу. Отложку ставит только user-сессия (Telethon); `publish.py` сверяет дату сообщения с `publish_at` и бот-fallback для отложки запрещён.
+- Telethon на Cloud Agent по TCP. Исходящий трафик идёт через HTTP-прокси, сырой MTProto рвётся (`1347703872 expected bytes` — это ответ `HTTP`). `newsagent.telegram_user` ходит MTProto поверх HTTP; проверка — `python3 scripts/telethon_ping.py`.
+- Сброс `stories`/`slots` в `memory/news.db` ради повтора. Сюжеты снова выбираются и выходят дублями; финальная сверка с лентой и отложкой канала в `publish.py` их отсекает, но память не трогать.
 - Пустой каталог emoji. Сначала `python3 scripts/sync_emoji.py`.
 - Рекламный канал не прочитан. Это стоп, а не «рекламы нет».
 - Секреты в handoff, логах и git.

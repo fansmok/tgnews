@@ -24,6 +24,23 @@ def test_publish_is_idempotent_after_message_id_exists(tmp_path, monkeypatch, ca
     assert "already_published message_id=123" in capsys.readouterr().out
 
 
+def test_schedule_matches_future_slot():
+    publish = _publish_module()
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    msk = ZoneInfo("Europe/Moscow")
+    target = datetime(2026, 11, 3, 18, 0, tzinfo=msk)
+    assert publish.schedule_matches(int(target.timestamp()), target)
+    assert not publish.schedule_matches(int(target.timestamp()) - 3600, target)
+
+
+def test_has_custom_emoji_detects_entities():
+    publish = _publish_module()
+    assert publish.has_custom_emoji({"entities": [{"type": "custom_emoji", "custom_emoji_id": "1"}]})
+    assert not publish.has_custom_emoji({"entities": [{"type": "bold"}]})
+
+
 def test_publish_error_never_exposes_bot_token(monkeypatch):
     publish = _publish_module()
     token = "123456:abcdefghijklmnopqrstuvwxyz"
@@ -33,3 +50,4 @@ def test_publish_error_never_exposes_bot_token(monkeypatch):
     detail = publish.safe_error(error)
     assert token not in detail
     assert detail == "Telegram request failed: RequestError"
+

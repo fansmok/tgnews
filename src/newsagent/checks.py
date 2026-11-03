@@ -175,6 +175,10 @@ def machine_check(run_dir: Path) -> dict:
         all_title_tags |= tags
         set_name = title_emoji.get("set_name") or ""
         check_name = "emoji" if len(title_emojis) == 1 else f"emoji_{idx}"
+        if set_name == "unicode_fallback" and not emoji_id:
+            _ok(checks, check_name)
+            all_title_tags |= tags
+            continue
         if set_name not in ALLOWED_PACKS:
             _fail(checks, check_name, "emoji pack is not allowed")
         elif not emoji_id.isdigit():
@@ -199,7 +203,7 @@ def machine_check(run_dir: Path) -> dict:
     available = set()
     for item in catalog.get("items") or []:
         available |= set(item.get("tags") or []) & club_ids
-    needed = set(story.get("clubs") or []) & available
+    needed = {club for club in (story.get("clubs") or []) if club in available}
     if needed and not (all_title_tags & needed):
         _fail(checks, "emoji_club_needed", "catalog has a club emoji that was not used")
     elif len(title_emojis) > 1 and needed:

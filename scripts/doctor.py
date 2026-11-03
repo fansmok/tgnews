@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -141,6 +142,21 @@ def main() -> int:
     except (OSError, ValueError):
         print("ERROR emoji catalog is not valid json")
         errors += 1
+
+    backend = os.environ.get("PUBLISH_BACKEND", "user").strip() or "user"
+    if backend == "user" and os.environ.get("TELEGRAM_STRING_SESSION", "").strip():
+        proc = subprocess.run(
+            [sys.executable, str(root / "scripts" / "telethon_ping.py")],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+        )
+        line = (proc.stdout or proc.stderr).strip().splitlines()[-1] if (proc.stdout or proc.stderr) else ""
+        if proc.returncode == 0:
+            print(line or "OK telethon")
+        else:
+            print(f"WARN {line or 'telethon session unreachable from this host; batch defer needs Mac/VPS or TELEGRAM_PROXY'}")
+            warnings += 1
 
     print(f"SUMMARY errors={errors} warnings={warnings}")
     return 1 if errors else 0

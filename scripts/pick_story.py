@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from newsagent.memory import connect, is_duplicate  # noqa: E402
+from newsagent.memory import connect, is_duplicate, pick_story_record  # noqa: E402
 from newsagent.runtime import iso, load_dotenv, now_msk, read_json, repo_root, write_json  # noqa: E402
 
 BATCH_URLS = "memory/batch-urls.json"
@@ -55,6 +55,9 @@ def main() -> int:
         duplicate, reason = is_duplicate(conn, item)
         if duplicate:
             skipped.append({"url": item["url"], "reason": reason})
+            continue
+        if not pick_story_record(conn, item):
+            skipped.append({"url": item["url"], "reason": "picked_by_other_run"})
             continue
         selected = item
         break

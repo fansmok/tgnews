@@ -368,17 +368,24 @@ def prune_history(conn: sqlite3.Connection, now: datetime | None = None) -> int:
     return stories
 
 
-def is_duplicate(conn: sqlite3.Connection, item: dict) -> tuple[bool, str]:
+LIVE_STATUSES = ("picked", "reserved", "scheduled", "sent")
+
+
+def is_duplicate(conn: sqlite3.Connection, item: dict, *, own: bool = False) -> tuple[bool, str]:
+    """own=True: сюжет уже выбран этим выпуском (picked/reserved), сравниваем только с остальными."""
     prune_history(conn)
     url = canonical_url(item["url"])
-    row = conn.execute("SELECT id FROM stories WHERE url = ?", (url,)).fetchone()
-    if row:
+    row = conn.execute("SELECT status FROM stories WHERE url = ?", (url,)).fetchone()
+    if row and not (own and row["status"] in {"picked", "reserved"}):
         return True, "url"
     norm = title_norm(item.get("title") or "")
     since = (datetime.now(MSK) - timedelta(days=MEMORY_DAYS)).isoformat(timespec="seconds")
     recent = conn.execute(
-        "SELECT url, title, title_norm, event_key, action FROM stories WHERE created_at >= ? AND status IN ('scheduled', 'sent')",
-        (since,),
+        """
+        SELECT url, title, title_norm, event_key, action FROM stories
+        WHERE created_at >= ? AND status IN ('picked', 'reserved', 'scheduled', 'sent') AND url != ?
+        """,
+        (since, url),
     ).fetchall()
     clubs = item.get("clubs") or []
     day, event_clubs = _day_clubs(item.get("event_key") or "")
@@ -431,15 +438,32 @@ def remember_story(conn: sqlite3.Connection, item: dict, status: str) -> None:
     conn.commit()
 
 
+def pick_story_record(conn: sqlite3.Connection, item: dict) -> bool:
+    """Занимает сюжет сразу при выборе: соседние слоты пачки видят его до публикации."""
+    return _insert_story(conn, item, "picked")
+
+
 def reserve_story(conn: sqlite3.Connection, item: dict) -> bool:
-    """Атомарно резервирует URL перед внешней отправкой."""
+    """Атомарно резервирует URL перед внешней отправкой. picked этого же выпуска повышается."""
+    url = canonical_url(item["url"])
+    cursor = conn.execute(
+        "UPDATE stories SET status = 'reserved', created_at = ? WHERE url = ? AND status = 'picked'",
+        (_now(), url),
+    )
+    conn.commit()
+    if cursor.rowcount == 1:
+        return True
+    return _insert_story(conn, item, "reserved")
+
+
+def _insert_story(conn: sqlite3.Connection, item: dict, status: str) -> bool:
     url = canonical_url(item["url"])
     title = item.get("title") or ""
     cursor = conn.execute(
         """
         INSERT OR IGNORE INTO stories
             (url, title, title_norm, event_key, action, source_id, published_at, created_at, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             url,
@@ -450,6 +474,7 @@ def reserve_story(conn: sqlite3.Connection, item: dict) -> bool:
             item.get("source_id") or "",
             item.get("published_at") or "",
             _now(),
+            status,
         ),
     )
     conn.commit()
@@ -457,11 +482,35 @@ def reserve_story(conn: sqlite3.Connection, item: dict) -> bool:
 
 
 def release_story_reservation(conn: sqlite3.Connection, item: dict) -> None:
+    """Сбой отправки: сюжет остаётся занятым этим выпуском (picked), но не опубликованным."""
     conn.execute(
-        "DELETE FROM stories WHERE url = ? AND status = 'reserved'",
+        "UPDATE stories SET status = 'picked' WHERE url = ? AND status = 'reserved'",
         (canonical_url(item["url"]),),
     )
     conn.commit()
+
+
+def _post_clubs(title: str) -> set[str]:
+    from newsagent.lexicon import find_ids, load_lexicon
+
+    return set(find_ids(title, load_lexicon().get("clubs") or []))
+
+
+def post_duplicate(title: str, previous: str) -> str:
+    """Сравнивает заголовки готовых постов канала (русские, с гербами в начале)."""
+    left = title_norm(title)
+    right = title_norm(previous)
+    if not left or not right:
+        return ""
+    if similar(left, right) >= 0.8:
+        return "post_title"
+    if jaccard(left, right) >= 0.5:
+        return "post_words"
+    if (_post_clubs(title) & _post_clubs(previous)) and _same_person(
+        person_skeletons(title), person_skeletons(previous)
+    ):
+        return "post_player"
+    return ""
 
 
 def url_hash(url: str) -> str:

@@ -137,19 +137,18 @@ def pull_bot_updates(channel: str) -> list[dict]:
 
 
 def fetch_telethon(channel: str) -> list[dict]:
-    from telethon.sessions import StringSession
-    from telethon.sync import TelegramClient
+    from newsagent.telegram_user import connect_user, resolve_chat
 
-    api_id = int(os.environ["TELEGRAM_API_ID"])
-    api_hash = os.environ["TELEGRAM_API_HASH"]
-    session = os.environ["TELEGRAM_STRING_SESSION"]
-    with TelegramClient(StringSession(session), api_id, api_hash) as client:
+    client = connect_user()
+    try:
         rows = []
-        for message in client.iter_messages(channel, limit=40):
+        for message in client.iter_messages(resolve_chat(client, channel), limit=40):
             if not getattr(message, "message", None):
                 continue
             rows.append({"text": message.message, "message_at": message.date})
         return rows
+    finally:
+        client.disconnect()
 
 
 def load_messages(channel: str) -> tuple[list[dict], str]:
