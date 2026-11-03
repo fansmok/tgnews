@@ -10,7 +10,7 @@ MSK = ZoneInfo("Europe/Moscow")
 SLOT = timedelta(minutes=30)
 AD_HOLD = timedelta(hours=1)
 BROADCAST_HOLD = timedelta(minutes=15)
-WINDOW_START = time(10, 0)
+WINDOW_START = time(9, 30)
 REGULAR_LEAD = timedelta(minutes=45)
 OVERWRITE_LEAD = timedelta(minutes=70)
 BROADCAST_LEAD = timedelta(minutes=25)
@@ -20,7 +20,7 @@ SCHEDULE_BUFFER = timedelta(seconds=20)
 DAILY_REGULAR_POSTS = 6
 # Окна дня (не фиксированные часы): в каждом окне один пост в «случайную» минуту (стабильно на дату).
 POST_BANDS: tuple[tuple[int, int, int, int], ...] = (
-    (10, 0, 11, 45),
+    (9, 30, 10, 45),
     (11, 45, 13, 30),
     (13, 30, 15, 15),
     (15, 15, 17, 45),
@@ -62,7 +62,9 @@ def regular_slot_window(day: date, moment: datetime) -> tuple[datetime, datetime
     for band in POST_BANDS:
         start, end = _band_bounds(day, band)
         if start <= moment <= end:
-            return start - REGULAR_LEAD, end + LATE_GRACE
+            # Первое окно само и есть время выхода: пост не уходит раньше 9:30.
+            lead = timedelta(0) if band == POST_BANDS[0] else REGULAR_LEAD
+            return start - lead, end + LATE_GRACE
     return None
 
 
