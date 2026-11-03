@@ -1331,4 +1331,5 @@ category: other
 - none recorded
 
 ### Fixer resolution
-- pending
+- fixed
+- Причина та же: scout видел только man-utd, place_emoji не ставил второй знак. Починено в lexicon.py и place_emoji.py, не в тексте поста.
