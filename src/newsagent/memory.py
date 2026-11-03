@@ -377,7 +377,10 @@ def is_duplicate(conn: sqlite3.Connection, item: dict) -> tuple[bool, str]:
     norm = title_norm(item.get("title") or "")
     since = (datetime.now(MSK) - timedelta(days=MEMORY_DAYS)).isoformat(timespec="seconds")
     recent = conn.execute(
-        "SELECT url, title, title_norm, event_key, action FROM stories WHERE created_at >= ? AND status IN ('scheduled', 'sent')",
+        """
+        SELECT url, title, title_norm, event_key, action FROM stories
+        WHERE created_at >= ? AND status IN ('scheduled', 'sent', 'reserved')
+        """,
         (since,),
     ).fetchall()
     clubs = item.get("clubs") or []

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import mimetypes
 import os
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 import httpx
@@ -14,6 +16,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from newsagent.memory import (  # noqa: E402
     connect,
+    is_duplicate,
     release_story_reservation,
     remember_story,
     reserve_story,
@@ -26,6 +29,7 @@ MSK = __import__("zoneinfo").ZoneInfo("Europe/Moscow")
 
 PUBLISH_ATTEMPTS = 3
 PUBLISH_RETRY_DELAY_SEC = 2
+SCHEDULE_TOLERANCE_SEC = 120
 
 
 def run_dir_from(value: str) -> Path:
@@ -91,10 +95,53 @@ def resolve_mode(plan: dict, publish_at, reason: str, ad_times: list, now) -> st
     return mode
 
 
-def send_bot(chat: str, photo: Path, caption: str, schedule_at: int | None) -> dict:
+def has_custom_emoji(caption: dict) -> bool:
+    return any(item.get("type") == "custom_emoji" for item in caption.get("entities") or [])
+
+
+def message_timestamp(sent) -> int:
+    if isinstance(sent, dict):
+        return int(sent.get("date") or 0)
+    moment = getattr(sent, "date", None)
+    if isinstance(moment, datetime):
+        return int(moment.timestamp())
+    return 0
+
+
+def schedule_matches(message_ts: int, publish_at: datetime) -> bool:
+    if not message_ts:
+        return False
+    expected = int(publish_at.timestamp())
+    return abs(message_ts - expected) <= SCHEDULE_TOLERANCE_SEC
+
+
+def delete_bot_message(chat: str, message_id: str) -> None:
     token = os.environ["TELEGRAM_BOT_TOKEN"]
-    data = {"chat_id": chat, "caption": caption, "parse_mode": "HTML"}
+    httpx.post(
+        f"https://api.telegram.org/bot{token}/deleteMessage",
+        data={"chat_id": chat, "message_id": message_id},
+        timeout=30,
+    ).raise_for_status()
+
+
+def send_bot(
+    chat: str,
+    photo: Path,
+    *,
+    html_caption: str,
+    plain_caption: str,
+    entities: list[dict],
+    schedule_at: int | None,
+) -> dict:
+    token = os.environ["TELEGRAM_BOT_TOKEN"]
+    data = {"chat_id": chat}
     params = {}
+    if entities:
+        data["caption"] = plain_caption
+        data["caption_entities"] = json.dumps(entities, ensure_ascii=False)
+    else:
+        data["caption"] = html_caption
+        data["parse_mode"] = "HTML"
     if schedule_at:
         stamp = str(int(schedule_at))
         data["schedule_date"] = stamp
@@ -135,10 +182,18 @@ def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule
             formatted.append(MessageEntityCustomEmoji(item["offset"], item["length"], int(item["custom_emoji_id"])))
         else:
             formatted.append(mapping[item["type"]](item["offset"], item["length"]))
+    proxy = os.environ.get("TELEGRAM_PROXY", "").strip()
+    proxy_arg = None
+    if proxy:
+        # socks5://host:port or host:port
+        cleaned = proxy.replace("socks5://", "")
+        host, _, port = cleaned.partition(":")
+        proxy_arg = ("socks5", host, int(port or "1080"))
     client = TelegramClient(
         StringSession(os.environ["TELEGRAM_STRING_SESSION"]),
         int(os.environ["TELEGRAM_API_ID"]),
         os.environ["TELEGRAM_API_HASH"],
+        proxy=proxy_arg,
         connection_retries=1,
         retry_delay=1,
         auto_reconnect=False,
@@ -152,6 +207,32 @@ def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule
         if schedule_at is not None:
             kwargs["schedule"] = schedule_at
         return client.send_file(chat, str(photo), **kwargs)
+    finally:
+        client.disconnect()
+
+
+def delete_user_message(chat: str, message_id: str) -> None:
+    from telethon.sessions import StringSession
+    from telethon.sync import TelegramClient
+
+    proxy = os.environ.get("TELEGRAM_PROXY", "").strip()
+    proxy_arg = None
+    if proxy:
+        cleaned = proxy.replace("socks5://", "")
+        host, _, port = cleaned.partition(":")
+        proxy_arg = ("socks5", host, int(port or "1080"))
+    client = TelegramClient(
+        StringSession(os.environ["TELEGRAM_STRING_SESSION"]),
+        int(os.environ["TELEGRAM_API_ID"]),
+        os.environ["TELEGRAM_API_HASH"],
+        proxy=proxy_arg,
+        connection_retries=1,
+        auto_reconnect=False,
+        timeout=20,
+    )
+    client.connect()
+    try:
+        client.delete_messages(chat, [int(message_id)])
     finally:
         client.disconnect()
 
@@ -241,11 +322,25 @@ def main() -> int:
         write_json(result_path, result)
         print("dry_run")
         return 0
+    duplicate, dup_reason = is_duplicate(conn, story)
+    if duplicate:
+        result.update({"status": "duplicate", "detail": f"memory:{dup_reason}"})
+        write_json(result_path, result)
+        print(f"REFUSE duplicate story ({dup_reason})")
+        return 1
     schedule_at = publish_at if mode == "schedule" else None
     if schedule_at and schedule_at <= now:
         print("REFUSE schedule time is in the past")
         return 1
     backend = os.environ.get("PUBLISH_BACKEND", "user").strip() or "user"
+    batch_defer = bool(plan.get("batch_defer"))
+    premium = has_custom_emoji(caption)
+    require_user_schedule = mode == "schedule" or batch_defer
+    if require_user_schedule and backend != "user":
+        result.update({"status": "error", "detail": "batch schedule requires PUBLISH_BACKEND=user"})
+        write_json(result_path, result)
+        print("REFUSE schedule requires user backend")
+        return 1
     photo_path = run_dir / photo["file"]
     if not photo_path.exists():
         print("REFUSE designed image is missing")
@@ -261,30 +356,69 @@ def main() -> int:
     message_id = ""
     used_backend = backend
     errors: list[str] = []
-    if backend == "user":
+
+    def fail_publish(detail: str) -> int:
+        release_story_reservation(conn, story)
+        set_slot_status(conn, publish_at, "failed", context["run_id"])
+        result["status"] = "error"
+        result["detail"] = detail
+        write_json(result_path, result)
+        print(f"ERROR {detail}")
+        return 1
+
+    if backend == "user" or require_user_schedule:
         try:
             sent = send_with_retries(
                 lambda: send_user(chat, photo_path, caption["plain"], caption["entities"], schedule_dt)
             )
             message_id = str(getattr(sent, "id", ""))
+            used_backend = "user"
         except Exception as exc:  # noqa: BLE001
             errors.append(safe_error(exc))
-            used_backend = "bot"
-    if not message_id:
+            if require_user_schedule:
+                return fail_publish(
+                    "user session required for scheduled posts; bot schedule_date is ignored in channel. "
+                    + errors[0]
+                )
+
+    if not message_id and not require_user_schedule:
         schedule_stamp = int(schedule_at.timestamp()) if schedule_at else None
+        entities = caption.get("entities") or []
         try:
             sent = send_with_retries(
-                lambda: send_bot(chat, photo_path, caption["html"], schedule_stamp)
+                lambda: send_bot(
+                    chat,
+                    photo_path,
+                    html_caption=caption["html"],
+                    plain_caption=caption["plain"],
+                    entities=entities if premium else [],
+                    schedule_at=schedule_stamp,
+                )
             )
             message_id = str(sent.get("message_id", ""))
+            used_backend = "bot"
         except Exception as exc:  # noqa: BLE001
-            release_story_reservation(conn, story)
-            set_slot_status(conn, publish_at, "failed", context["run_id"])
-            result["status"] = "error"
-            result["detail"] = "; ".join(errors + [safe_error(exc)]).strip("; ")
-            write_json(result_path, result)
-            print(f"ERROR {result['detail']}")
-            return 1
+            return fail_publish("; ".join(errors + [safe_error(exc)]).strip("; "))
+
+    if not message_id:
+        return fail_publish("; ".join(errors) or "publish produced no message_id")
+
+    if mode == "schedule":
+        msg_ts = message_timestamp(sent)
+        if not schedule_matches(msg_ts, publish_at):
+            try:
+                if used_backend == "bot":
+                    delete_bot_message(chat, message_id)
+                else:
+                    delete_user_message(chat, message_id)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"cleanup failed: {safe_error(exc)}")
+            return fail_publish(
+                "schedule_not_applied: Telegram did not defer the message "
+                f"(message_date={msg_ts}, expected≈{int(publish_at.timestamp())}). "
+                + "; ".join(errors)
+            )
+
     status = "scheduled" if mode == "schedule" else "sent"
     result.update(
         {
