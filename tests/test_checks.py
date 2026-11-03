@@ -72,7 +72,21 @@ def test_machine_rejects_photo_review_rework(tmp_path):
     assert report["checks"]["photo_review"]["status"] == "FAIL"
 
 
-def test_machine_checks_telegram_utf16_limit(tmp_path):
+def test_machine_rejects_list_teaser_without_names(tmp_path):
+    _ready_run(tmp_path)
+    write_json(
+        tmp_path / "copy.json",
+        {
+            "title": "Самые дорогие трансферы в истории клубов Ла Лиги",
+            "paragraphs": ["При подсчёте учитывается только 1 игрок от каждого клуба."],
+            "bold_spans": ["1 игрок от каждого клуба"],
+            "quote": None,
+            "source_text": "Самые дорогие трансферы в истории клубов, которые играли в Ла Лиге.\n(В учет идёт только 1 игрок от каждого клуба)",
+        },
+    )
+    report = machine_check(tmp_path)
+    assert report["status"] == "FAIL"
+    assert report["checks"]["subject"]["status"] == "FAIL"
     _ready_run(tmp_path)
     copy = {
         "title": "Новая футбольная новость",

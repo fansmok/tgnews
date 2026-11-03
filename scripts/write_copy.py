@@ -65,6 +65,21 @@ def article_text(url: str, cached_path: Path | None = None) -> str:
     return node.get_text("\n", strip=True)[:6000]
 
 
+TELEGRAM_RULE = (
+    "Источник — пост чужого Telegram-канала. Сделай лёгкий рерайт: те же факты, цифры, имена и цитаты, "
+    "но фразы свои, а не копия поста. Заголовок обычным регистром, без капса и восклицаний. "
+    "Опрос, призыв проголосовать, подпись канала, реплики админа и emoji из поста не переносятся."
+)
+SITE_RULE = (
+    "Близость к источнику важнее красоты. Английский текст переведи близко к фразам источника. "
+    "Русский текст почти оставь: убери рекламу, ссылки и «читайте также», подгони под формат."
+)
+
+
+def from_telegram(story: dict) -> bool:
+    return story.get("source_kind") == "telegram"
+
+
 def prompt(story: dict, source: str, policy: str, *, page_is_menu: bool = False) -> str:
     menu_note = ""
     if page_is_menu:
@@ -72,6 +87,7 @@ def prompt(story: dict, source: str, policy: str, *, page_is_menu: bool = False)
             "Текст страницы похож на меню сайта и в источник не входит. "
             "Не добавляй факты вне заголовка и summary карточки.\n\n"
         )
+    source_rule = TELEGRAM_RULE if from_telegram(story) else SITE_RULE
     return f"""Ты готовишь подпись футбольной новости для Telegram.
 Язык ответа: русский.
 
@@ -79,7 +95,7 @@ def prompt(story: dict, source: str, policy: str, *, page_is_menu: bool = False)
 
 {MENU_FACT_RULE}
 
-{menu_note}Близость к источнику важнее красоты. Английский текст переведи близко к фразам источника. Русский текст почти оставь: убери рекламу, ссылки и «читайте также», подгони под формат. Не добавляй факты, которых нет в заголовке и summary карточки. Если новость — реакция на чьи-то слова, в текст должны войти сами эти слова. Цитата того, кто только отреагировал, их не заменяет. Слов в карточке нет — не выдумывай их. Не пиши комментарий болельщика и не ставь emoji.
+{menu_note}{source_rule} Не добавляй факты, которых нет в заголовке и summary карточки. Если новость — реакция на чьи-то слова, в текст должны войти сами эти слова. Цитата того, кто только отреагировал, их не заменяет. Слов в карточке нет — не выдумывай их. Не пиши комментарий болельщика и не ставь emoji.
 
 Заголовок, абзац и цитата не повторяют друг друга. В заголовке нет текста цитаты и нет двоеточия с чужой речью. Абзац не пересказывает заголовок даже другими словами: в нём только новый факт, которого в заголовке нет. Заголовок не закрывает весь текст карточки: факт из summary, которого нет в заголовке, остаётся абзацем. Если такого факта нет, paragraphs оставь пустым массивом. Цитату при этом всё равно положи в quote_text. Если цитата уже звучит в заголовке или абзаце, quote_text оставь пустым.
 
@@ -136,10 +152,11 @@ def main() -> int:
     run_dir = Path(args.run_dir)
     story = read_json(run_dir / "story.json")
     policy = (ROOT / "shared" / "editorial-policy.md").read_text(encoding="utf-8")
+    page = "" if from_telegram(story) else article_text(str(story.get("url") or ""), run_dir / "source-page.html")
     source, page_is_menu = source_for_copy(
         str(story.get("title") or ""),
         str(story.get("summary") or ""),
-        article_text(str(story.get("url") or ""), run_dir / "source-page.html"),
+        page,
     )
     request = prompt(story, source, policy, page_is_menu=page_is_menu)
     rework_path = run_dir / "rework.json"

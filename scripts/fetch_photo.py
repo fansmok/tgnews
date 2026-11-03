@@ -35,7 +35,7 @@ def main() -> int:
     urls = list(story.get("image_urls") or [])
     headers = {"User-Agent": "Mozilla/5.0"}
     with httpx.Client(headers=headers, follow_redirects=True, timeout=25) as client:
-        if story.get("url"):
+        if story.get("url") and not (story.get("source_kind") == "telegram" and urls):
             page = download(client, story["url"])
             if page:
                 (run_dir / "source-page.html").write_bytes(page)
