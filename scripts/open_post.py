@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -24,6 +25,11 @@ def main() -> int:
     stamp = moment.strftime("%H%M")
     run_id = f"R-{moment.strftime('%Y%m%d')}-{stamp}-{args.reason[:3]}"
     run_dir = root / "memory" / "runs" / run_id
+    result_path = run_dir / "publish-result.json"
+    published = result_path.exists() and read_json(result_path).get("status") in {"sent", "scheduled"}
+    if run_dir.exists() and not published:
+        # Новая попытка слота: design.json, critic.json и фото прошлого сюжета не должны в неё попасть.
+        shutil.rmtree(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     now = now_msk()
     context = {

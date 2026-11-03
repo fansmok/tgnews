@@ -277,7 +277,8 @@ def reject_empty_reaction(run_dir: Path, payload: dict) -> bool:
         if story.get("url"):
             remember_story(connect(repo_root() / "memory" / "news.db"), story, "rejected")
     payload["status"] = "rejected"
-    payload["reason"] = "reaction_without_words"
+    detail = str(payload["failed_checks"]["reaction"])
+    payload["reason"] = "statement_without_content" if detail.startswith("заявление") else "reaction_without_words"
     return True
 
 

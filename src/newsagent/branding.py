@@ -71,6 +71,14 @@ _DEAL = re.compile(
 )
 
 
+_TRANSFER_SIGNAL = re.compile(
+    r"трансфер|(?<![а-яё])переход(?:а|е|ом|у)?(?![а-яё])|перейд[её]т|переш[её]л|аренд|"
+    r"интерес\w*|следит за|хоч\w* (?:подписать|купить|забрать|оформить)|переговор|предложени\w* за|"
+    r"\btransfers?\b|\bbid\b|\boffer\b|\binterest(?:ed)?\b|\btalks\b|\bmove to\b|\bloan\b|\bsign(?:s|ed|ing)?\b",
+    re.IGNORECASE,
+)
+
+
 def _card_text(story: dict, copy: dict | None) -> str:
     copy = copy or {}
     parts = [
@@ -92,8 +100,11 @@ def pick_template(story: dict, copy: dict | None) -> str:
     if action == "lineup":
         return "fixture"
     if action == "transfer":
+        # «ТРАНСФЕР» на карточке — только при явном трансферном сигнале; сомнение — «НОВОСТЬ».
         blob = _card_text(story, copy)
-        if not (_DECLINES_MOVE.search(blob) and not _FEE.search(blob) and not _DEAL.search(blob)):
+        signal = _TRANSFER_SIGNAL.search(blob) or _FEE.search(blob) or _DEAL.search(blob)
+        declined = _DECLINES_MOVE.search(blob) and not _FEE.search(blob) and not _DEAL.search(blob)
+        if signal and not declined:
             return "transfer"
     if action in {"sack", "injury"}:
         return "urgent"

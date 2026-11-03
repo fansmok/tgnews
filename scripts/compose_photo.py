@@ -72,8 +72,10 @@ def main() -> int:
     template = pick_template(story, copy)
     design_path = run_dir / "design.json"
     if design_path.exists():
-        forced = str(read_json(design_path).get("template") or "")
-        if forced in brand_spec()["templates"]:
+        previous_design = read_json(design_path)
+        forced = str(previous_design.get("template") or "")
+        same_story = previous_design.get("story_url") == story.get("url")
+        if forced in brand_spec()["templates"] and same_story:
             template = forced
     headline = (copy.get("title") or story.get("title") or "").strip()
     footer = pillow_footer(story)
@@ -95,6 +97,7 @@ def main() -> int:
             return 0
     meta = {
         "template": template,
+        "story_url": story.get("url"),
         "size_id": "telegram-600",
         "width": 600,
         "height": 600,

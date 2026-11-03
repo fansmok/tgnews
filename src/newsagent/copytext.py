@@ -270,6 +270,32 @@ def reaction_missing_words(title: str, paragraphs: list[str], quote: dict | None
     return ""
 
 
+_STATEMENT = re.compile(
+    r"(?:выступил\w*|опубликовал\w*|сделал\w*|распространил\w*|выпустил\w*|направил\w*)\s+(?:с\s+)?"
+    r"(?:официальн\w+\s+|открыт\w+\s+)?(?:заявлени|обращени|письм|позици)|"
+    r"заявлени\w*\s+(?:по поводу|по теме|в связи|касательно|относительно)|"
+    r"(?:высказал\w*|отреагировал\w*|прокомментировал\w*|ответил\w*)\s+(?:на|о|об|по поводу)\s",
+    re.IGNORECASE,
+)
+_CONTENT = re.compile(
+    r"«[^»]{12,}»|(?<![а-яё])что(?![а-яё])|по словам|по мнению|:\s*[«\"]|"
+    r"потребовал\w*|попросил\w*|призвал\w*|обвинил\w*|назвал\w*|считает|уверен\w*|"
+    r"предложил\w*|пообещал\w*|намерен\w*|раскритиковал\w*|извинил\w*|"
+    r"\bsaid\b|\bsays\b|\bclaimed\b|\bdemanded\b|\baccused\b",
+    re.IGNORECASE,
+)
+
+
+def statement_missing_content(title: str, paragraphs: list[str], quote: dict | None) -> bool:
+    """«Выступили с заявлением» без того, что заявлено: читателю не понятен контекст."""
+    body = " ".join([title, *[part for part in paragraphs if part]])
+    if not _STATEMENT.search(body):
+        return False
+    if ((quote or {}).get("text") or "").strip():
+        return False
+    return not _CONTENT.search(body)
+
+
 def repeats_quote(title: str, paragraphs: list[str], quote_text: str) -> bool:
     quote = _flat(quote_text)
     if len(quote) < 12:
