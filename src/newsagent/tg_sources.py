@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 import httpx
 from bs4 import BeautifulSoup
 
-from newsagent.copytext import strip_emoji
+from newsagent.copytext import strip_emoji, list_teaser_without_names
 from newsagent.lexicon import classify, event_key, find_ids, load_lexicon
 from newsagent.memory import jaccard, person_skeletons, title_norm, _same_person
 from newsagent.runtime import iso, parse_iso, read_json, repo_root, write_json
@@ -188,6 +188,11 @@ def story_from_message(message: dict, channel: dict, now: datetime, lexicon: dic
     text, reason = clean_post(message.get("text") or "", channel.get("strip_lines"))
     if not text:
         return None, reason
+    lines = [line for line in text.split("\n") if line.strip()]
+    title_line = lines[0] if lines else ""
+    body_lines = lines[1:]
+    if list_teaser_without_names(title_line, body_lines, ""):
+        return None, "list_no_names"
     stale = stale_reason(text)
     if stale:
         return None, stale

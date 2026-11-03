@@ -1,7 +1,7 @@
 import importlib.util
 from pathlib import Path
 
-from newsagent.copytext import BOLD_SPAN_RULE, clause_outside_title, detach_quote, keep_summary_fact, repeats_quote
+from newsagent.copytext import BOLD_SPAN_RULE, clause_outside_title, detach_quote, keep_summary_fact, repeats_quote, list_teaser_without_names
 
 
 def _write_copy():
@@ -95,3 +95,19 @@ def test_telegram_source_asks_for_a_light_rewrite_instead_of_keeping_the_post():
     assert "лёгкий рерайт" in telegram and "без капса" in telegram
     assert "почти оставь" not in telegram
     assert "почти оставь" in site and "лёгкий рерайт" not in site
+
+
+def test_list_teaser_without_names_catches_la_liga_infographic():
+    assert list_teaser_without_names(
+        "Самые дорогие трансферы в истории клубов Ла Лиги",
+        ["При подсчёте учитывается только 1 игрок от каждого клуба."],
+        "Самые дорогие трансферы в истории клубов, которые играли в Ла Лиге.\n(В учет идёт только 1 игрок от каждого клуба)",
+    )
+
+
+def test_list_teaser_allows_injury_list_with_surnames():
+    assert not list_teaser_without_names(
+        "Список травмированных игроков «Баварии» перед матчем с «Атлетико»:",
+        ["В список вошли Гнабри, Мусиала, Нойер и Олисе."],
+        "",
+    )

@@ -120,6 +120,22 @@ def test_collect_keeps_fresh_news_and_skips_ads_scores_old_and_cross_channel_dup
     assert skipped == {"score": 1, "ad": 1, "forwarded": 1, "no_image": 1}
 
 
+def test_la_liga_transfer_teaser_is_dropped_at_scout():
+    body = (
+        "Самые дорогие трансферы в истории клубов, которые играли в Ла Лиге.<br/>"
+        "(В учет идёт только 1 игрок от каждого клуба)<br/>"
+        "Кто был самым провальным?<br/>— Дембеле"
+    )
+    items, _errors, skipped = collect_channels(
+        [{"username": "tutoffside", "weight": 8}],
+        NOW,
+        24,
+        loader=lambda username, since: parse_preview(page(message(username, 5835, body))),
+    )
+    assert items == []
+    assert skipped.get("list_no_names") == 1
+
+
 def test_clubs_from_the_title_lead_the_list_for_title_badges():
     body = (
         "Суперкомпьютер не видит конкурентов «Арсеналу» в гонке за чемпионство АПЛ<br/>"

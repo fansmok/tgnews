@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image
 
 from newsagent.caption import contains_ad, longest_common_run, mostly_cyrillic, render_post
-from newsagent.copytext import reaction_missing_words, repeats_quote, restates_title
+from newsagent.copytext import reaction_missing_words, repeats_quote, restates_title, list_teaser_without_names
 from newsagent.emoji_sync import ALLOWED_PACKS
 from newsagent.reactions import has_foreign_emoji
 from newsagent.lexicon import load_lexicon
@@ -91,6 +91,8 @@ def machine_check(run_dir: Path) -> dict:
         _fail(checks, "paragraphs", "too many or a paragraph is longer than 320")
     elif any(restates_title(title, part) for part in paragraphs):
         _fail(checks, "paragraphs", "paragraph repeats the title")
+    elif list_teaser_without_names(title, paragraphs, copy.get("source_text") or ""):
+        _fail(checks, "subject", "list or ranking without player or coach names in text")
     else:
         _ok(checks, "paragraphs", str(len(paragraphs)))
 
