@@ -63,13 +63,13 @@ CRON_TZ=Europe/Moscow
 
 ## Полностью в Cursor Cloud (без Mac и без своего cron)
 
-Идея: репозиторий + секреты в [Cloud Agents](https://cursor.com/dashboard/cloud-agents), расписание — **Cursor Automation**, один прогон = облачная VM + агент по `agents/fn-director.md`. Публикация в Telegram идёт **с этой VM** (`publish.py`), не с вашего ноутбука.
+Идея: репозиторий + секреты в [Cloud Agents](https://cursor.com/dashboard/cloud-agents), расписание — **Cursor Automation**, один прогон = облачная VM + агент по `agents/fn-director.md`. **Отложенная публикация с custom emoji (`PUBLISH_BACKEND=user`, Telethon) с дефолтной Cloud VM не работает** — MTProto режется (IncompleteReadError). `doctor.py` на Cloud Agent вернёт `ERROR mtproto …`. Варианты: **private worker** (Mac/VPS) для automation fn-director, или готовить посты в cloud, а `publish.py` гонять локально/cron на машине с доступом к Telegram.
 
 ### Что где крутится
 
 | Часть | Где |
 |-------|-----|
-| `gate` / `scout` / `produce` / `publish` / `finish` | Ubuntu VM Cloud Agent (`scripts/pipeline.py`) |
+| `gate` / `scout` / `produce` / `publish` / `finish` | Ubuntu VM Cloud Agent (`scripts/pipeline.py`); **publish через Telethon — только на worker/VPS/Mac** |
 | Gemini, Kie, Telegram API | Запросы с VM по секретам Dashboard |
 | **fn-critic**, fn-copy, fn-fixer | Subagent Task внутри того же Cloud Agent (токены **Included / Cloud Agents** в биллинге Cursor) |
 | Расписание «каждые 15 мин 09–23 МСК» | Automation → trigger **On a schedule** (cron) |

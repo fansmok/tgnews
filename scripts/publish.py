@@ -20,6 +20,7 @@ from newsagent.memory import (  # noqa: E402
     set_slot_status,
 )
 from newsagent.runtime import iso, load_dotenv, now_msk, parse_iso, read_json, repo_root, write_json  # noqa: E402
+from newsagent.mtproto import format_mtproto_error, run_connected  # noqa: E402
 from newsagent.schedule import delivery_mode  # noqa: E402
 
 
@@ -33,11 +34,42 @@ def mime_of(path: Path) -> str:
     return guessed or "application/octet-stream"
 
 
+def user_session_ready() -> bool:
+    return bool(
+        os.environ.get("TELEGRAM_STRING_SESSION")
+        and os.environ.get("TELEGRAM_API_ID")
+        and os.environ.get("TELEGRAM_API_HASH")
+    )
+
+
+def caption_has_custom_emoji(caption: dict) -> bool:
+    return any(
+        item.get("type") == "custom_emoji" and str(item.get("custom_emoji_id") or "").isdigit()
+        for item in (caption.get("entities") or [])
+    )
+
+
+def resolve_publish_backend(context: dict, caption: dict) -> tuple[str, str]:
+    preferred = (context.get("publish_backend") or os.environ.get("PUBLISH_BACKEND") or "bot").strip() or "bot"
+    if preferred not in {"bot", "user"}:
+        preferred = "bot"
+    if caption_has_custom_emoji(caption):
+        if user_session_ready():
+            return "user", ""
+        return preferred, "custom emoji в посте: нужны PUBLISH_BACKEND=user и TELEGRAM_STRING_SESSION"
+    if preferred == "user" and not user_session_ready():
+        return preferred, "PUBLISH_BACKEND=user, но сессия Telethon не настроена"
+    return preferred, ""
+
+
 def safe_error(exc: Exception) -> str:
     if isinstance(exc, httpx.HTTPStatusError):
         return f"Telegram HTTP {exc.response.status_code}"
     if isinstance(exc, httpx.RequestError):
         return f"Telegram request failed: {exc.__class__.__name__}"
+    name = exc.__class__.__name__
+    if "IncompleteReadError" in name or "Telethon" in name or "146 bytes read" in str(exc):
+        return format_mtproto_error(exc)
     text = str(exc)
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     if token:
@@ -72,8 +104,6 @@ def send_bot(chat: str, photo: Path, caption: str, schedule_at: int | None) -> d
 
 
 def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule_at):
-    from telethon.sessions import StringSession
-    from telethon.sync import TelegramClient
     from telethon.tl.types import (
         MessageEntityBlockquote,
         MessageEntityBold,
@@ -92,19 +122,14 @@ def send_user(chat: str, photo: Path, plain: str, entities: list[dict], schedule
             formatted.append(MessageEntityCustomEmoji(item["offset"], item["length"], int(item["custom_emoji_id"])))
         else:
             formatted.append(mapping[item["type"]](item["offset"], item["length"]))
-    client = TelegramClient(
-        StringSession(os.environ["TELEGRAM_STRING_SESSION"]),
-        int(os.environ["TELEGRAM_API_ID"]),
-        os.environ["TELEGRAM_API_HASH"],
-    )
-    client.connect()
-    try:
+
+    def _send(client):
         kwargs = {"caption": plain, "formatting_entities": formatted}
         if schedule_at is not None:
             kwargs["schedule"] = schedule_at
         return client.send_file(chat, str(photo), **kwargs)
-    finally:
-        client.disconnect()
+
+    return run_connected(_send)
 
 
 def main() -> int:
@@ -173,7 +198,20 @@ def main() -> int:
         print("dry_run")
         return 0
     schedule_at = publish_at if mode == "schedule" else None
-    backend = os.environ.get("PUBLISH_BACKEND", "bot").strip() or "bot"
+    backend, refuse = resolve_publish_backend(context, caption)
+    if refuse:
+        write_json(
+            result_path,
+            {
+                "status": "error",
+                "publish_at": iso(publish_at),
+                "reason": plan["reason"],
+                "mode": mode,
+                "detail": refuse,
+            },
+        )
+        print(f"REFUSE {refuse}")
+        return 1
     photo_path = run_dir / photo["file"]
     if not photo_path.exists():
         print("REFUSE designed image is missing")
