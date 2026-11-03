@@ -150,6 +150,38 @@ def test_clubs_from_the_title_lead_the_list_for_title_badges():
     assert items[0]["clubs"] == ["arsenal"]
 
 
+def test_slots_get_the_latest_post_of_each_channel_first():
+    texts = {
+        1: "«Реал Мадрид» продлил контракт с Вальверде до 2030 года<br/>Уругваец подписал соглашение в понедельник",
+        2: "«Ливерпуль» интересуется Гвиоль из «Манчестер Сити»<br/>Хорват оценивается в 80 млн евро",
+        3: "«Барселона» ищет замену Левандовски летом<br/>Клуб рассматривает трёх нападающих",
+        4: "«Ювентус» уволит Тудора после зимнего перерыва<br/>Руководство недовольно игрой команды",
+        5: "«Бавария» хочет продлить Мусиалу до 2031 года<br/>Переговоры с агентом идут вторую неделю",
+    }
+
+    def news(channel, post_id, hours_ago):
+        return message(channel, post_id, texts[post_id], hours_ago=hours_ago)
+
+    pages = {
+        "goaltime2026": page(news("goaltime2026", 1, 1), news("goaltime2026", 2, 3)),
+        "nakorotke1": page(news("nakorotke1", 3, 2), news("nakorotke1", 4, 9)),
+        "tutoffside": page(news("tutoffside", 5, 6)),
+    }
+    channels = [{"username": name, "weight": 8} for name in pages]
+    items, _errors, _skipped = collect_channels(
+        channels, NOW, 24, loader=lambda username, since: parse_preview(pages[username])
+    )
+    order = sorted(items, key=lambda row: row["score"], reverse=True)
+    assert [row["url"].rsplit("/", 2)[-2] for row in order] == [
+        "goaltime2026",
+        "nakorotke1",
+        "tutoffside",
+        "goaltime2026",
+        "nakorotke1",
+    ]
+    assert [row["age_hours"] for row in order] == [1, 2, 6, 3, 9]
+
+
 def test_fetch_channel_pages_back_until_the_window_is_covered():
     calls = []
     first = page(*[message("goaltime2026", post_id, "Новость", hours_ago=1) for post_id in (40, 41)])

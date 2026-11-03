@@ -249,10 +249,27 @@ def same_story(left: dict, right: dict) -> bool:
 
 def dedupe_stories(items: list[dict]) -> list[dict]:
     kept: list[dict] = []
-    for item in sorted(items, key=lambda row: row["score"], reverse=True):
+    for item in sorted(items, key=lambda row: row["age_hours"]):
         if not any(same_story(item, previous) for previous in kept):
             kept.append(item)
     return kept
+
+
+def freshest_by_channel(items: list[dict]) -> list[dict]:
+    """Очередь слотов: самый свежий пост каждого канала, затем следующий по свежести и так по кругу.
+
+    pick_story берёт кандидатов по score, поэтому score переписывается под этот порядок,
+    а прежний балл остаётся в quality_score.
+    """
+    queues: dict[str, list[dict]] = {}
+    for item in sorted(items, key=lambda row: row["age_hours"]):
+        queues.setdefault(item["source_id"], []).append(item)
+    ordered: list[dict] = []
+    while any(queues.values()):
+        round_items = [queue.pop(0) for queue in queues.values() if queue]
+        ordered.extend(sorted(round_items, key=lambda row: row["age_hours"]))
+    total = len(ordered)
+    return [{**item, "quality_score": item["score"], "score": total - index} for index, item in enumerate(ordered)]
 
 
 def collect_channels(channels: list[dict], now: datetime, hours: float, loader=cached_channel) -> tuple[list[dict], list[str], dict]:
@@ -276,4 +293,4 @@ def collect_channels(channels: list[dict], now: datetime, hours: float, loader=c
                 skipped[reason] = skipped.get(reason, 0) + 1
                 continue
             items.append(story)
-    return dedupe_stories(items), errors, skipped
+    return freshest_by_channel(dedupe_stories(items)), errors, skipped
