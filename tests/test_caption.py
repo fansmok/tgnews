@@ -32,8 +32,8 @@ def test_caption_renders_two_club_crests_on_the_title():
             "paragraphs": ["Прямой переход сейчас маловероятен."],
             "bold_spans": [],
             "title_emoji": [
-                {"custom_emoji_id": "111", "fallback": "🇪🇸", "tags": ["barcelona"]},
-                {"custom_emoji_id": "222", "fallback": "🇪🇸", "tags": ["real-madrid"]},
+                {"custom_emoji_id": "111", "fallback": "🇪🇸", "set_name": "FC_logos", "tags": ["barcelona"]},
+                {"custom_emoji_id": "222", "fallback": "🇪🇸", "set_name": "FC_logos", "tags": ["real-madrid"]},
             ],
             "paragraph_emoji": [None],
             "quote": None,
@@ -42,7 +42,7 @@ def test_caption_renders_two_club_crests_on_the_title():
     )
     assert 'emoji-id="111"' in rendered["html"]
     assert 'emoji-id="222"' in rendered["html"]
-    assert '<tg-emoji emoji-id="111">🇪🇸</tg-emoji> <tg-emoji emoji-id="222">🇪🇸</tg-emoji> <b>' in rendered["html"]
+    assert '<tg-emoji emoji-id="111">⚽</tg-emoji> <tg-emoji emoji-id="222">⚽</tg-emoji> <b>' in rendered["html"]
     emojis = [item for item in rendered["entities"] if item["type"] == "custom_emoji"]
     assert len(emojis) == 2
     assert emojis[0]["custom_emoji_id"] == "111"

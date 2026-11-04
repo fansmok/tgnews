@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import zlib
 
-from newsagent.emoji_sync import ALLOWED_PACKS
+from newsagent.emoji_sync import ALLOWED_PACKS, caption_fallback
 
 TOPIC_FALLBACKS = {
     "result": ["⚽️", "🏆", "🥅", "🥇"],
@@ -47,12 +47,14 @@ def _usable(item: dict, story: dict) -> bool:
 
 
 def _logo_entry(item: dict, tag: str) -> dict:
-    return {
+    entry = {
         "custom_emoji_id": item["custom_emoji_id"],
         "fallback": item.get("fallback") or "⚽",
         "tags": [tag],
         "set_name": item["set_name"],
     }
+    entry["fallback"] = caption_fallback(entry)
+    return entry
 
 
 def _tagged_logos(items: list[dict], keys: list[str]) -> list[tuple[dict, str]]:

@@ -89,6 +89,14 @@ def is_flag(fallback: str) -> bool:
     return any(0x1F1E6 <= ord(char) <= 0x1F1FF or 0xE0061 <= ord(char) <= 0xE007F for char in fallback)
 
 
+def caption_fallback(emoji: dict) -> str:
+    """Fallback for tg-emoji and plain clients; FC_logos stickers often use country flags in Telegram."""
+    fallback = emoji.get("fallback") or "⚽"
+    if emoji.get("set_name") == "FC_logos" and is_flag(fallback):
+        return "⚽"
+    return fallback
+
+
 def items_from_bot_set(payload: dict, set_name: str, hints: dict[str, str]) -> list[dict]:
     logo_tags = load_logo_tags()
     items = []
@@ -98,6 +106,8 @@ def items_from_bot_set(payload: dict, set_name: str, hints: dict[str, str]) -> l
             continue
         fallback = sticker.get("emoji") or "⚽"
         if set_name == "FC_logos":
+            if is_flag(fallback):
+                fallback = "⚽"
             tags = [logo_tags[emoji_id]] if emoji_id in logo_tags else ["club-logo"]
         elif is_flag(fallback):
             tags = ["flag"]

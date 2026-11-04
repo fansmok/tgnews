@@ -1042,3 +1042,58 @@ category: other
 
 ### Fixer resolution
 - pending
+
+## INC-20261104-1141-fn-critic-other
+status: fixed
+run_date: 2026-11-04
+role: fn-critic
+run_id: R-20261104-1830-ad_
+severity: low
+category: other
+
+### What went wrong
+- неверные emoji в шапке: флаги вместо гербов клубов
+
+### How the agent recovered this run
+- yes
+
+### Durable fix needed before next run
+- REWORK fn-copy
+
+### Suggested files to inspect/change
+- `caption.html`
+- `copy.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- У FC_logos в Telegram fallback часто флаг страны; в caption и emoji.json для гербов ставится ⚽, id premium-гербов сохраняется. Критик: tg-emoji с id из fc-logo-tags.json — герб, не флаг.
+
+## INC-20261104-1141-fn-copy-other
+status: fixed
+run_date: 2026-11-04
+role: fn-copy
+run_id: R-20261104-1830-ad_
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: в начале заголовка должны быть premium-гербы «Манчестер Сити» и «Реал Мадрид» (клубы новости), а не флаги Англии и Испании
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- То же: `caption_fallback` в pick_custom и render_post, чтобы критик не видел флаги в caption.html при корректных id гербов.

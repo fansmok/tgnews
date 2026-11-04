@@ -4,6 +4,7 @@ import html
 import re
 from dataclasses import dataclass
 
+from newsagent.emoji_sync import caption_fallback
 from newsagent.reactions import split_comment
 
 AD_PATTERNS = [
@@ -150,7 +151,7 @@ def render_post(post: dict) -> dict:
     def add_emoji(emoji: dict | None) -> None:
         if not emoji:
             return
-        fallback = emoji.get("fallback") or "⚽"
+        fallback = caption_fallback(emoji)
         emoji_id = str(emoji.get("custom_emoji_id") or "")
         if not emoji_id:
             html_parts.append(f"{html.escape(fallback)} ")

@@ -55,6 +55,24 @@ def test_both_club_crests_go_on_the_title_when_story_has_two_clubs():
     assert picked["title_emoji"][1]["tags"] == ["dortmund"]
 
 
+def test_fc_logo_title_uses_ball_fallback_not_country_flag():
+    catalog = {
+        "items": CATALOG["items"]
+        + [
+            {"custom_emoji_id": "90", "fallback": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "set_name": "FC_logos", "tags": ["man-city"]},
+            {"custom_emoji_id": "91", "fallback": "🇪🇸", "set_name": "FC_logos", "tags": ["real-madrid"]},
+        ]
+    }
+    picked = pick_custom(
+        {"url": "https://example.com/ucl", "action": "news", "clubs": ["man-city", "real-madrid"]},
+        {"paragraphs": ["Матч в ЛЧ."]},
+        "main",
+        catalog,
+    )
+    assert picked["title_emoji"][0]["fallback"] == "⚽"
+    assert picked["title_emoji"][1]["fallback"] == "⚽"
+
+
 def test_result_uses_the_ball_from_the_football_pack():
     picked = pick_custom({"url": "https://example.com/match", "action": "result"}, {}, "result", CATALOG)
     assert picked["title_emoji"]["set_name"] == "foot_flags_by_fStikBot"
