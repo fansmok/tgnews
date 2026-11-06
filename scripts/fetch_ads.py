@@ -9,8 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from newsagent.ads import select_ad_entries, select_ads  # noqa: E402
-from newsagent.channels import load_messages, normalize_messages  # noqa: E402
+from newsagent.ads import combine_ad_messages, select_ad_entries, select_ads  # noqa: E402
+from newsagent.channels import load_messages, normalize_messages, read_inbox  # noqa: E402
 from newsagent.runtime import iso, load_dotenv, now_msk, repo_root, write_json  # noqa: E402
 
 
@@ -30,6 +30,16 @@ def main() -> int:
     try:
         messages, reader = load_messages(channel)
         messages = normalize_messages(messages)
+        inbox = normalize_messages(
+            [
+                {"text": item.get("text") or "", "message_at": item["message_at"]}
+                for item in read_inbox()
+                if item.get("text") and item.get("message_at")
+            ]
+        )
+        if inbox:
+            reader = f"{reader}+inbox"
+        messages = combine_ad_messages(messages, inbox)
     except Exception as exc:  # noqa: BLE001
         write_json(run_dir / "ads.json", {"status": "error", "detail": str(exc), "slots": []})
         print(f"ERROR {exc}")
