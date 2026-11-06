@@ -25,6 +25,11 @@ def _lines(text: str) -> list[str]:
     return [line.strip() for line in cleaned.splitlines() if line.strip()]
 
 
+def _match_time(line: str):
+    """Время в начале строки. Точки перед ним («...20:45») не мешают."""
+    return TIME_LINE.match(line.lstrip(".…").strip())
+
+
 def looks_like_ad_post(text: str) -> bool:
     lines = _lines(text)
     if not lines:
@@ -32,7 +37,7 @@ def looks_like_ad_post(text: str) -> bool:
     lowered = text.lower()
     if any(phrase in lowered for phrase in ("без рекламы", "рекламы нет", "отмена рекламы")):
         return True
-    return any(TIME_LINE.match(line) for line in lines)
+    return any(_match_time(line) for line in lines)
 
 
 def _target_date(lines: list[str], message_dt: datetime):
@@ -61,10 +66,10 @@ def parse_ad_post(text: str, message_dt: datetime) -> dict | None:
     cancelled = any(phrase in lowered for phrase in ("без рекламы", "рекламы нет", "отмена рекламы"))
     slots: list[datetime] = []
     items: list[dict] = []
-    bare_broadcast = any(is_broadcast(line) and not TIME_LINE.match(line) for line in lines)
+    bare_broadcast = any(is_broadcast(line) and not _match_time(line) for line in lines)
     if not cancelled:
         for line in lines:
-            match = TIME_LINE.match(line)
+            match = _match_time(line)
             if not match:
                 continue
             hour = int(match.group(1))

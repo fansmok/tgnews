@@ -62,6 +62,21 @@ def test_webhook_post_overrides_the_older_channel_schedule():
     assert via_unix["message_at"].astimezone(MSK) == posted
 
 
+def test_channel_posts_keep_the_clock_time_and_ignore_grid_notes():
+    posted = datetime(2026, 11, 6, 9, 0, tzinfo=MSK)
+    samples = {
+        "...20:45 \n\nВся сетка": "20:45",
+        "Реклама сегодня \n\n20:00\n\nВся сетка": "20:00",
+        "Реклама сегодня \n\n11:00 \n\nВся сетка": "11:00",
+        "Реклама сегодня в этих каналах 👇 \n\nФутбол news \nЛа лига \nБарса \nРеал \n\n19:00": "19:00",
+    }
+    for text, clock in samples.items():
+        parsed = parse_ad_post(text, posted)
+        assert parsed is not None
+        assert parsed["slots"] == [f"2026-11-06T{clock}:00+03:00"]
+        assert parsed["items"][0]["kind"] == "regular"
+
+
 def test_plain_time_is_moscow_and_broadcast_word_can_sit_on_the_next_line():
     posted = datetime(2026, 11, 6, 18, 0, tzinfo=MSK)
     regular = parse_ad_post("22:00\n", posted)
