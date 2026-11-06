@@ -6,7 +6,13 @@ from pathlib import Path
 from PIL import Image
 
 from newsagent.caption import contains_ad, longest_common_run, mostly_cyrillic, render_post
-from newsagent.copytext import reaction_missing_words, repeats_quote, restates_title, statement_missing_content
+from newsagent.copytext import (
+    quote_attributes_narrative_years,
+    reaction_missing_words,
+    repeats_quote,
+    restates_title,
+    statement_missing_content,
+)
 from newsagent.emoji_sync import ALLOWED_PACKS
 from newsagent.reactions import has_foreign_emoji, mismatched_reaction
 from newsagent.lexicon import load_lexicon
@@ -138,6 +144,12 @@ def machine_check(run_dir: Path) -> dict:
         text = quote_text.strip()
         if not text or text[0] in "\"“”":
             _fail(checks, "quote", "quote must use guillemets at render time and have text")
+        elif quote_attributes_narrative_years(text, (copy.get("source_text") or ""), str(quote.get("author") or "")):
+            _fail(
+                checks,
+                "quote",
+                "год или турнир с годом в цитате не из прямой речи приписанного спикера в источнике",
+            )
         else:
             _ok(checks, "quote")
     else:

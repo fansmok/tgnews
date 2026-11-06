@@ -301,3 +301,76 @@ def repeats_quote(title: str, paragraphs: list[str], quote_text: str) -> bool:
     if len(quote) < 12:
         return False
     return quote in _flat(title + " " + " ".join(paragraphs))
+
+
+_YEAR_IN_TEXT = re.compile(r"\b(?:19|20)\d{2}\b")
+
+
+def _years_in_text(text: str) -> set[str]:
+    return set(_YEAR_IN_TEXT.findall(text))
+
+
+def _bbc_speech_after_cue(st: str, cue: str) -> str | None:
+    """Прямая речь BBC: после cue идёт \", первый абзац без ведущей кавычки, дальше абзацы с \"."""
+    pos = st.casefold().find(cue.casefold())
+    if pos == -1:
+        return None
+    tail = st[pos + len(cue) :].lstrip()
+    if not tail.startswith('"'):
+        return None
+    inner = tail[1:]
+    parts = inner.split("\n\n")
+    block_parts: list[str] = []
+    for i, raw in enumerate(parts):
+        part = raw.strip()
+        if not part:
+            continue
+        if i == 0:
+            block_parts.append(part)
+            continue
+        if part.startswith('"') or part.startswith("“"):
+            block_parts.append(part)
+            continue
+        break
+    if not block_parts:
+        return None
+    return "\n\n".join(block_parts)
+
+
+def _direct_speech_block_for_author(source_text: str, author: str) -> str | None:
+    """Фрагмент прямой речи спикера из источника (англ.), если узнаём вступление."""
+    if not (source_text and author and author.strip()):
+        return None
+    low_author = author.casefold()
+    cues: list[str] = []
+    if "саттон" in low_author or "sutton" in low_author:
+        cues.extend(
+            (
+                "Chris Sutton told BBC Sport:",
+                "Former England striker Chris Sutton told BBC Sport:",
+            )
+        )
+    st = source_text
+    for cue in cues:
+        block = _bbc_speech_after_cue(st, cue)
+        if block:
+            return block
+    return None
+
+
+def quote_attributes_narrative_years(quote_text: str, source_text: str, author: str) -> bool:
+    """
+    True, если в цитате есть годы, которых нет в прямой речи приписанного спикера —
+    типичный случай: в реплику перенесли предложение журналиста (Euro 2028 и т.д.).
+    Нет блока речи — проверка не срабатывает (чтобы не ловить ложные срабатывания).
+    """
+    if not (quote_text and quote_text.strip() and author and author.strip()):
+        return False
+    block = _direct_speech_block_for_author(source_text, author)
+    if not block:
+        return False
+    q_years = _years_in_text(quote_text)
+    if not q_years:
+        return False
+    b_low = block.lower()
+    return any(y not in b_low for y in q_years)
