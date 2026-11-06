@@ -99,6 +99,15 @@ _GENERIC_NAMES = {
 }
 _CLUB_SKELETONS: set[str] | None = None
 
+# Заголовок про контракт/сделку игрока с углом «сборная / АПЛ» vs тот же игрок+клуб без этого угла — разные сюжеты (не дубль по игроку в ленте).
+_NATIONAL_OR_LEAGUE_ANGLE_TOKENS = frozenset(
+    {"апл", "англии", "англия", "сборной", "сборная", "сборную", "премьер", "премьерлиги", "премьерлига"}
+)
+
+
+def _national_or_league_angle(norm: str) -> bool:
+    return bool(set((norm or "").split()) & _NATIONAL_OR_LEAGUE_ANGLE_TOKENS)
+
 
 def consonant_skeleton(token: str) -> str:
     chars: list[str] = []
@@ -509,6 +518,8 @@ def post_duplicate(title: str, previous: str) -> str:
     if (_post_clubs(title) & _post_clubs(previous)) and _same_person(
         person_skeletons(title), person_skeletons(previous)
     ):
+        if _national_or_league_angle(left) != _national_or_league_angle(right):
+            return ""
         return "post_player"
     return ""
 

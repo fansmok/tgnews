@@ -1042,3 +1042,56 @@ category: other
 
 ### Fixer resolution
 - pending
+
+## INC-20261106-1728-fn-publish-other
+status: open
+run_date: 2026-11-06
+role: fn-publish
+run_id: R-20261106-1630-reg
+severity: medium
+category: other
+
+### What went wrong
+- публикация: duplicate channel:post_words:feed:344
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261106-1734-fn-publish-other
+status: fixed
+run_date: 2026-11-06
+role: fn-publish
+run_id: R-20261106-2005-reg
+severity: medium
+category: other
+
+### What went wrong
+- публикация: duplicate channel:post_player:feed:343
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- `post_duplicate`: ветка post_player не срабатывает, если у одного заголовка есть угол «сборная/АПЛ», а у другого в ленте нет — такой пара ближе к разным сюжетам (Кейн: контракт vs влияние на Англию и Премьер-лигу). Калафьори и пара «близок/оформлен» по-прежнему отсекаются.
