@@ -370,7 +370,10 @@
       "tier": "top",
       "aliases": [
         "leverkusen",
-        "леверкузен"
+        "леверкузен",
+        "bayer leverkusen",
+        "bayer 04",
+        "байер*"
       ]
     },
     {
@@ -416,7 +419,8 @@
       "tier": "second",
       "aliases": [
         "marseille",
-        "марсель"
+        "марсель",
+        "марсел*"
       ]
     },
     {

@@ -61,3 +61,13 @@ def test_match_score_is_a_result_event():
     assert verdict["action"] == "result"
     assert "como" in verdict["clubs"]
     assert "man-utd" in verdict["clubs"]
+
+
+def test_russian_bayer_means_leverkusen():
+    """Short «Байер» must resolve to leverkusen so two-club matches get two crests."""
+    title = "Тренер «Марселя» прокомментировал матч с «Байером»"
+    summary = "Победа над немецким «Байером» (1:0)."
+    verdict = classify(title, summary, load_lexicon())
+    assert verdict["keep"] is True
+    assert "marseille" in verdict["clubs"]
+    assert "leverkusen" in verdict["clubs"]

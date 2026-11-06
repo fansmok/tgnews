@@ -1042,3 +1042,57 @@ category: other
 
 ### Fixer resolution
 - pending
+
+## INC-20261106-1659-fn-critic-other
+status: fixed
+run_date: 2026-11-06
+role: fn-critic
+run_id: R-20261106-2005-reg
+severity: low
+category: other
+
+### What went wrong
+- Два клуба в новости — в заголовке один символ вместо двух гербов
+
+### How the agent recovered this run
+- no
+
+### Durable fix needed before next run
+- Добавить второй герб (Байер) или допустимый символ по политике FC_logos
+
+### Suggested files to inspect/change
+- `critic.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- В `shared/football_lexicon.json` у `leverkusen` добавлены алиасы «Байер», bayer leverkusen, bayer 04; у `marseille` — стем «марсел*», чтобы склонения вроде «Марселя» совпадали с клубом. Тогда `classify` и `place_emoji` видят оба клуба и ставят два герба FC_logos.
+
+## INC-20261106-1700-fn-copy-other
+status: fixed
+run_date: 2026-11-06
+role: fn-copy
+run_id: R-20261106-2005-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: в матче два клуба (Марсель и Байер) — в начале заголовка должно быть два герба клубов; сейчас только один символ (🇫🇷)
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- Та же причина, что у критика: в лексиконе «Байер» не сходился с leverkusen, «Марселя» — с marseille. Исправлено в `shared/football_lexicon.json`; тест `test_russian_bayer_means_leverkusen` в `tests/test_lexicon.py`.
