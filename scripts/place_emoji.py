@@ -11,19 +11,8 @@ sys.path.insert(0, str(ROOT / "src"))
 from newsagent.branding import pick_template  # noqa: E402
 from newsagent.custom_emoji import pick_custom  # noqa: E402
 from newsagent.emoji_sync import catalog_path  # noqa: E402
-from newsagent.lexicon import find_ids, load_lexicon  # noqa: E402
+from newsagent.lexicon import merge_story_clubs  # noqa: E402
 from newsagent.runtime import read_json, repo_root, write_json  # noqa: E402
-
-
-def clubs_with_copy(clubs: list[str], copy_text: str) -> list[str]:
-    from_copy = find_ids(copy_text, load_lexicon()["clubs"])
-    if len(from_copy) >= 2:
-        return from_copy[:2]
-    merged = list(from_copy)
-    for club in clubs:
-        if club not in merged:
-            merged.append(club)
-    return merged
 
 
 def main() -> int:
@@ -36,7 +25,16 @@ def main() -> int:
     story = read_json(run_dir / "story.json")
     copy = read_json(run_dir / "copy.json") if (run_dir / "copy.json").exists() else {}
     copy_text = " ".join([copy.get("title") or "", *(copy.get("paragraphs") or [])])
-    story = {**story, "clubs": clubs_with_copy(story.get("clubs") or [], copy_text)}
+    story = {
+        **story,
+        "clubs": merge_story_clubs(
+            story.get("clubs") or [],
+            story.get("title") or "",
+            story.get("summary") or "",
+            copy.get("source_text") or "",
+            copy_text,
+        ),
+    }
     template = pick_template(story, copy)
     catalog = read_json(catalog_path())
     try:

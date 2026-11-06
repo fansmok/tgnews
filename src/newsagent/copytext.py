@@ -284,6 +284,20 @@ _CONTENT = re.compile(
     r"\bsaid\b|\bsays\b|\bclaimed\b|\bdemanded\b|\baccused\b",
     re.IGNORECASE,
 )
+LIST_TEASER = re.compile(
+    r"(?:"
+    r"сам(?:ые|ый|ая|ое)|"
+    r"топ(?:[\s-]?\d+|\s|$)|"
+    r"список|"
+    r"рейтинг|"
+    r"номинант|"
+    r"дорог(?:ие|ой|ая)|"
+    r"лучш(?:ие|ий|ая)|"
+    r"худш(?:ие|ий|ая)|"
+    r"шедевр дня"
+    r")",
+    re.IGNORECASE,
+)
 
 
 def statement_missing_content(title: str, paragraphs: list[str], quote: dict | None) -> bool:
@@ -294,6 +308,20 @@ def statement_missing_content(title: str, paragraphs: list[str], quote: dict | N
     if ((quote or {}).get("text") or "").strip():
         return False
     return not _CONTENT.search(body)
+
+
+def list_teaser_without_names(title: str, paragraphs: list[str], source_text: str = "") -> bool:
+    """Рейтинг/топ/список, где суть — картинка или опрос, а в тексте нет ни одной персоны."""
+    from newsagent.memory import person_skeletons
+
+    lead = title.strip()
+    if not LIST_TEASER.search(lead):
+        lowered = lead.lower()
+        if not (("трансфер" in lowered or "сборн" in lowered) and ("истори" in lowered or "сам" in lowered)):
+            return False
+    body = "\n".join(part for part in [title, *paragraphs, source_text] if part and str(part).strip())
+    names = {s for s in person_skeletons(body) if len(s) >= 4}
+    return not names
 
 
 def repeats_quote(title: str, paragraphs: list[str], quote_text: str) -> bool:

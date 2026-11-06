@@ -61,3 +61,35 @@ def test_match_score_is_a_result_event():
     assert verdict["action"] == "result"
     assert "como" in verdict["clubs"]
     assert "man-utd" in verdict["clubs"]
+
+
+def test_portsmouth_is_found_in_english_and_russian():
+    lexicon = load_lexicon()
+    en = classify("Mee call-up", "Portsmouth forward Kenny joins Northern Ireland", lexicon)
+    assert "portsmouth" in en["clubs"]
+    ru = classify("Вызов в сборную", "Нападающий «Портсмута» получил вызов", lexicon)
+    assert "portsmouth" in ru["clubs"]
+
+
+def test_merge_story_clubs_adds_second_club_from_copy():
+    from newsagent.lexicon import merge_story_clubs
+
+    merged = merge_story_clubs(
+        ["man-utd"],
+        "",
+        "",
+        "",
+        "Вратарь «Манчестер Юнайтед» и нападающий «Портсмута» вызваны в сборную.",
+    )
+    assert merged == ["man-utd", "portsmouth"]
+
+
+def test_merge_story_clubs_ignores_a_table_of_clubs():
+    from newsagent.lexicon import merge_story_clubs
+
+    merged = merge_story_clubs(
+        ["arsenal"],
+        "Суперкомпьютер не видит конкурентов «Арсеналу»",
+        "1. Арсенал - 68,2%\n2. Борнмут - 0,4%\n3. Тоттенхэм - 0,1%\n4. Брентфорд - 0,2%",
+    )
+    assert merged == ["arsenal"]
