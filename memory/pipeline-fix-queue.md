@@ -1042,3 +1042,166 @@ category: other
 
 ### Fixer resolution
 - pending
+
+## INC-20261106-1706-fn-critic-other
+status: open
+run_date: 2026-11-06
+role: fn-critic
+run_id: R-20261106-1630-reg
+severity: low
+category: other
+
+### What went wrong
+- Текст без сути комментария тренера; заголовок без двух символов клубов при двух командах
+
+### How the agent recovered this run
+- нет
+
+### Durable fix needed before next run
+- Добавить краткую суть слов Мартинеса из источника; поставить два герба или два ⚽ в заголовок
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261106-1707-fn-copy-other
+status: open
+run_date: 2026-11-06
+role: fn-copy
+run_id: R-20261106-1630-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: источник — про слова Мартинеса о поражении; в абзаце нет сути комментария, только что он «прокомментировал» (заявление без содержания); в новости два клуба (Байер и Марсель): в начале заголовка нужны два герба или, если нет в FC_logos, два нейтральных символа вроде ⚽ для каждого клуба — сейчас один флаг ЕС
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261106-1710-fn-critic-other
+status: fixed
+run_date: 2026-11-06
+role: fn-critic
+run_id: R-20261106-2005-reg
+severity: medium
+category: other
+
+### What went wrong
+- Цитата приписана Саттону, в источнике другие слова; переписать цитату по BBC.
+
+### How the agent recovered this run
+- no
+
+### Durable fix needed before next run
+- fn-copy: цитата по блоку Sutton или корректная атрибуция
+
+### Suggested files to inspect/change
+- `caption.html`
+- `copy.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- Машинная проверка quote: при известном блоке BBC после «Chris Sutton told BBC Sport» год из цитаты должен входить в этот блок; иначе FAIL (ловит перенос Euro 2028 из нарратива в реплику). Промпт write_copy дополнен тем же правилом.
+
+## INC-20261106-1711-fn-copy-other
+status: fixed
+run_date: 2026-11-06
+role: fn-copy
+run_id: R-20261106-2005-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: Цитата с автором «Крис Саттон» не совпадает с речью Саттона в источнике: фраза про Евро-2028 у BBC относится к намерениям Кейна (сюжет статьи), а не к прямой цитате Саттона. Заменить на дословный отрывок из блока Chris Sutton в source_text или убрать неверное приписывание.
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- То же: `quote_attributes_narrative_years` в copytext + проверка в machine_check; промпт write_copy.
+
+## INC-20261106-1712-fn-copy-other
+status: fixed
+run_date: 2026-11-06
+role: fn-copy
+run_id: R-20261106-2005-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: цитата приписана Крису Саттону, но в source_text у него другие слова (о том, что Кейн может играть ещё годы, возраст не проблема и т.д.); фраза про Евро-2028 в статье не в его прямой речи — заменить на реальный фрагмент речи Саттона из источника или убрать ложное приписывание и оформить без неверной цитаты
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- То же.
+
+## INC-20261106-1712-fn-critic-other
+status: fixed
+run_date: 2026-11-06
+role: fn-critic
+run_id: R-20261106-2005-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK: цитата не из источника
+
+### How the agent recovered this run
+- no
+
+### Durable fix needed before next run
+- fn-copy: заменить quote на текст Саттона из source_text
+
+### Suggested files to inspect/change
+- `critic.json`
+- `caption.html`
+- `copy.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- То же.
