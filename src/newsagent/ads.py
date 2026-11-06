@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -12,7 +13,6 @@ TIME_LINE = re.compile(
     re.IGNORECASE,
 )
 DATE_IN_TEXT = re.compile(r"(?<!\d)(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?(?!\d)")
-HEADER = re.compile(r"реклам", re.IGNORECASE)
 
 
 def is_broadcast(text: str) -> bool:
@@ -29,11 +29,8 @@ def looks_like_ad_post(text: str) -> bool:
     lines = _lines(text)
     if not lines:
         return False
-    head = " ".join(lines[:4])
-    if not HEADER.search(head):
-        return False
     lowered = text.lower()
-    if "без рекламы" in lowered or "рекламы нет" in lowered or "отмена рекламы" in lowered:
+    if any(phrase in lowered for phrase in ("без рекламы", "рекламы нет", "отмена рекламы")):
         return True
     return any(TIME_LINE.match(line) for line in lines)
 
@@ -64,6 +61,7 @@ def parse_ad_post(text: str, message_dt: datetime) -> dict | None:
     cancelled = any(phrase in lowered for phrase in ("без рекламы", "рекламы нет", "отмена рекламы"))
     slots: list[datetime] = []
     items: list[dict] = []
+    bare_broadcast = any(is_broadcast(line) and not TIME_LINE.match(line) for line in lines)
     if not cancelled:
         for line in lines:
             match = TIME_LINE.match(line)
@@ -74,7 +72,7 @@ def parse_ad_post(text: str, message_dt: datetime) -> dict | None:
             if hour > 23 or minute > 59:
                 continue
             rest = match.group(3) or ""
-            kind = "broadcast" if is_broadcast(rest) else "regular"
+            kind = "broadcast" if is_broadcast(rest) or (bare_broadcast and not rest.strip()) else "regular"
             moment = datetime(target.year, target.month, target.day, hour, minute, tzinfo=MSK)
             slots.append(moment)
             items.append({"time": iso(moment), "kind": kind, "label": line})
@@ -133,6 +131,22 @@ def _coerce_moment(raw, now: datetime) -> datetime:
     if isinstance(raw, (int, float)) or (isinstance(raw, str) and raw.strip().isdigit()):
         return datetime.fromtimestamp(int(raw), tz=timezone.utc)
     return parse_iso(str(raw))
+
+
+def payload_from_body(raw: str) -> dict | None:
+    """Тело вебхука — текст поста как в канале. JSON с полем text тоже принимается."""
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return {"text": raw}
+    if isinstance(payload, str) and payload.strip():
+        return {"text": payload.strip()}
+    if isinstance(payload, dict):
+        return payload
+    return {"text": raw}
 
 
 def message_from_webhook(payload: dict, now: datetime) -> dict | None:

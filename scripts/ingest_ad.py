@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Кладёт пост рекламы из тела вебхука в memory/ads-inbox.json.
+"""Кладёт текст поста из канала рекламы в memory/ads-inbox.json.
 
-Дальше fetch_ads читает этот пост вместе с каналом. Время в строках
-расписания — московское, unix date из Telegram только говорит, в какой день пост.
+Тело — сам текст, как его написали. Время в строках московское.
+JSON с полем text тоже принимается. День поста — сегодня по Москве,
+если в тексте нет «завтра» или даты.
 """
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from newsagent.ads import message_from_webhook  # noqa: E402
+from newsagent.ads import message_from_webhook, payload_from_body  # noqa: E402
 from newsagent.channels import read_inbox, save_inbox  # noqa: E402
 from newsagent.runtime import iso, load_dotenv, now_msk  # noqa: E402
 
@@ -21,16 +21,9 @@ from newsagent.runtime import iso, load_dotenv, now_msk  # noqa: E402
 def main() -> int:
     load_dotenv()
     raw = sys.stdin.read().strip()
-    if not raw:
+    payload = payload_from_body(raw)
+    if payload is None:
         print("skipped=empty")
-        return 0
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError:
-        print("skipped=bad_json")
-        return 0
-    if not isinstance(payload, dict):
-        print("skipped=bad_json")
         return 0
     item = message_from_webhook(payload, now_msk())
     if not item:

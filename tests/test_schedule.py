@@ -142,6 +142,22 @@ def test_two_ads_fill_every_overwrite_in_one_batch():
     assert len([item for item in rest if item["reason"] == "ad_overwrite"]) == 2
 
 
+def test_evening_ad_keeps_standing_day_posts_and_adds_two_after_the_hour():
+    now = datetime(DAY.year, DAY.month, DAY.day, 18, 0, tzinfo=MSK)
+    standing = set(baseline_slots(DAY))
+    ad = [at(22, 0)]
+    fresh = batch_slots(now, ad, standing)
+    assert [(item["publish_at"].strftime("%H:%M"), item["reason"]) for item in fresh] == [
+        ("23:00", "ad_overwrite"),
+        ("23:30", "ad_overwrite"),
+    ]
+    scheduled = [
+        {"publish_at": moment, "message_id": str(index), "run_id": f"R-{index}"}
+        for index, moment in enumerate(sorted(standing))
+    ]
+    assert relocation_plan(now, ad, scheduled) == []
+
+
 def test_blocked_post_moves_to_the_next_free_minute():
     now = datetime(DAY.year, DAY.month, DAY.day, 12, 10, tzinfo=MSK)
     blocked = datetime(DAY.year, DAY.month, DAY.day, 13, 40, tzinfo=MSK)
