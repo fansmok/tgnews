@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from newsagent.runtime import iso
+from newsagent.runtime import iso, parse_iso
 
 MSK = ZoneInfo("Europe/Moscow")
 TIME_LINE = re.compile(
@@ -112,6 +112,39 @@ def select_ad_entries(messages: list[dict]) -> list[dict]:
             if t not in items_map or it.get("kind") == "broadcast":
                 items_map[t] = {"time": t, "kind": it.get("kind", "regular")}
     return [items_map[k] for k in sorted(items_map)]
+
+
+def combine_ad_messages(channel_messages: list[dict], inbox_messages: list[dict]) -> list[dict]:
+    """Канал и только что пришедший пост. Сверху самый новый, его расписание и берётся."""
+    rows = []
+    for message in [*inbox_messages, *channel_messages]:
+        text = str(message.get("text") or "").strip()
+        moment = message.get("message_at")
+        if not text or moment is None:
+            continue
+        rows.append({"text": text, "message_at": moment})
+    rows.sort(key=lambda item: item["message_at"], reverse=True)
+    return rows
+
+
+def _coerce_moment(raw, now: datetime) -> datetime:
+    if raw is None or raw == "":
+        return now
+    if isinstance(raw, (int, float)) or (isinstance(raw, str) and raw.strip().isdigit()):
+        return datetime.fromtimestamp(int(raw), tz=timezone.utc)
+    return parse_iso(str(raw))
+
+
+def message_from_webhook(payload: dict, now: datetime) -> dict | None:
+    """Текст поста из тела вебхука Make. Время строки расписания дальше считается московским."""
+    post = payload.get("channel_post") or payload.get("message") or payload
+    if not isinstance(post, dict):
+        return None
+    text = str(post.get("text") or post.get("caption") or "").strip()
+    if not text:
+        return None
+    raw_date = post.get("date") if post.get("date") not in (None, "") else post.get("message_at")
+    return {"text": text, "message_at": _coerce_moment(raw_date, now)}
 
 
 def select_ads(messages: list[dict]) -> list[str]:
