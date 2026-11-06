@@ -104,9 +104,57 @@ _NATIONAL_OR_LEAGUE_ANGLE_TOKENS = frozenset(
     {"апл", "англии", "англия", "сборной", "сборная", "сборную", "премьер", "премьерлиги", "премьерлига"}
 )
 
+# «Что сделка означает для…» vs «контракт близок» — разный угол (аналитика vs факт), даже при том же игроке и клубе.
+_IMPLICATION_ANGLE_TOKENS = frozenset(
+    {
+        "означает",
+        "значит",
+        "влияет",
+        "влияние",
+        "последствия",
+        "means",
+        "implications",
+        "implying",
+    }
+)
+
+# «Контракт близок / оформят» vs «что контракт означает» — разные посты при том же игроке.
+_DEAL_STATUS_TOKENS = frozenset(
+    {
+        "близок",
+        "близка",
+        "близки",
+        "оформлен",
+        "оформлено",
+        "оформят",
+        "подписан",
+        "подпишет",
+        "подпишут",
+        "скоро",
+        "дней",
+        "дня",
+        "дне",
+    }
+)
+
 
 def _national_or_league_angle(norm: str) -> bool:
     return bool(set((norm or "").split()) & _NATIONAL_OR_LEAGUE_ANGLE_TOKENS)
+
+
+def _implication_angle(norm: str) -> bool:
+    return bool(set((norm or "").split()) & _IMPLICATION_ANGLE_TOKENS)
+
+
+def _deal_status_angle(norm: str) -> bool:
+    return bool(set((norm or "").split()) & _DEAL_STATUS_TOKENS)
+
+
+def _analytical_vs_deal_status(left: str, right: str) -> bool:
+    """Один заголовок про последствия/смысл, другой — про стадию сделки (не дубль по словам)."""
+    a = _implication_angle(left) and _deal_status_angle(right)
+    b = _implication_angle(right) and _deal_status_angle(left)
+    return bool(a or b)
 
 
 def consonant_skeleton(token: str) -> str:
@@ -514,11 +562,25 @@ def post_duplicate(title: str, previous: str) -> str:
     if similar(left, right) >= 0.8:
         return "post_title"
     if jaccard(left, right) >= 0.5:
+        # Тот же игрок и клуб, но разный тип заголовка (аналитика «что это значит» vs короткая новость о статусе сделки).
+        if (_post_clubs(title) & _post_clubs(previous)) and _same_person(
+            person_skeletons(title), person_skeletons(previous)
+        ):
+            if _national_or_league_angle(left) != _national_or_league_angle(right):
+                return ""
+            if _implication_angle(left) != _implication_angle(right):
+                return ""
+            if _analytical_vs_deal_status(left, right):
+                return ""
         return "post_words"
     if (_post_clubs(title) & _post_clubs(previous)) and _same_person(
         person_skeletons(title), person_skeletons(previous)
     ):
         if _national_or_league_angle(left) != _national_or_league_angle(right):
+            return ""
+        if _implication_angle(left) != _implication_angle(right):
+            return ""
+        if _analytical_vs_deal_status(left, right):
             return ""
         return "post_player"
     return ""
