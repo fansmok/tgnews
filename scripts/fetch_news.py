@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from newsagent.feeds import dedupe_batch, parse_feed  # noqa: E402
 from newsagent.lexicon import load_lexicon  # noqa: E402
 from newsagent.runtime import load_dotenv, now_msk, repo_root, write_json  # noqa: E402
+from newsagent.tg_sources import collect_channels  # noqa: E402
 
 CACHE_TTL = 10 * 60
 
@@ -76,14 +77,24 @@ def main() -> int:
         run_dir = repo_root() / run_dir
     sources = json.loads((repo_root() / "shared" / "sources.json").read_text(encoding="utf-8"))
     now = now_msk()
-    payloads, errors = fetch_payloads(sources)
-    items = collect(sources, payloads, now, float(sources["max_age_hours"]))
-    if not items:
-        items = collect(sources, payloads, now, float(sources["expand_age_hours"]))
+    channels = sources.get("telegram_channels") or []
+    items: list[dict] = []
+    errors: list[str] = []
+    skipped: dict = {}
+    if channels:
+        items, errors, skipped = collect_channels(channels, now, float(sources.get("telegram_max_age_hours", 24)))
+    rss = not items and sources.get("rss_fallback", not channels)
+    if rss:
+        payloads, feed_errors = fetch_payloads(sources)
+        errors += feed_errors
+        items = collect(sources, payloads, now, float(sources["max_age_hours"]))
+        if not items:
+            items = collect(sources, payloads, now, float(sources["expand_age_hours"]))
     items = dedupe_batch(items)[:30]
-    write_json(run_dir / "candidates.json", {"items": items, "errors": errors})
-    print(f"candidates={len(items)} feed_errors={len(errors)}")
-    if not items and errors and len(errors) >= len(sources["feeds"]):
+    write_json(run_dir / "candidates.json", {"items": items, "errors": errors, "skipped": skipped})
+    print(f"candidates={len(items)} feed_errors={len(errors)} skipped={sum(skipped.values())}")
+    total = len(channels) + (len(sources["feeds"]) if rss else 0)
+    if not items and errors and len(errors) >= total:
         return 1
     return 0
 
