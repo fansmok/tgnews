@@ -12,7 +12,8 @@ IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp")
 BAD_URL = re.compile(r"logo|sprite|favicon|avatar|placeholder|1x1|pixel|doubleclick|adservice|banner|stitcher", re.IGNORECASE)
 LOGO_NEGATION = re.compile(r"(?:^|[^A-Za-z0-9])(?:no|without)[_-]?logo", re.IGNORECASE)
 MIN_BYTES = 15_000
-MIN_SIDE = 320
+MIN_LONG_SIDE = 320
+MIN_SHORT_SIDE = 160
 MAX_BYTES = 5_000_000
 
 
@@ -48,7 +49,8 @@ def acceptable(url: str, payload: bytes) -> tuple[bool, str, int, int]:
         width, height = image.size
     except (UnidentifiedImageError, OSError):
         return False, "bad_image", 0, 0
-    if min(width, height) < MIN_SIDE:
+    long_side, short_side = max(width, height), min(width, height)
+    if long_side < MIN_LONG_SIDE or short_side < MIN_SHORT_SIDE:
         return False, "too_small", width, height
     if width / height > 3 or height / width > 3:
         return False, "banner", width, height

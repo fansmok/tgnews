@@ -51,3 +51,18 @@ def test_stitcher_url_is_rejected():
     assert ok is False
     assert reason == "bad_url"
 
+
+def test_telegram_telesco_portrait_preview_is_acceptable():
+    payload = _jpeg(width=180, height=320)
+    ok, reason, width, height = acceptable("https://cdn4.telesco.pe/file/preview.jpg", payload)
+    assert ok is True
+    assert reason == "ok"
+    assert (width, height) == (180, 320)
+
+
+def test_tiny_icon_is_still_rejected():
+    payload = _jpeg(width=200, height=200)
+    ok, reason, _, _ = acceptable("https://cdn.example.com/icon.jpg", payload)
+    assert ok is False
+    assert reason == "too_small"
+

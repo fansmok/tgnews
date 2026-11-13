@@ -1333,3 +1333,108 @@ category: other
 ### Fixer resolution
 - fixed
 - Причина та же: scout видел только man-utd, place_emoji не ставил второй знак. Починено в lexicon.py и place_emoji.py, не в тексте поста.
+
+## INC-20261113-1134-fn-copy-other
+status: open
+run_date: 2026-11-13
+role: fn-copy
+run_id: R-20261113-1350-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В начале заголовка стоит 📌 из NewsEmoji; новость про «МЮ» — поставь premium-герб «Манчестер Юнайтед» из FC_logos (тег man-utd) вместо знака темы
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261113-1135-fn-copy-other
+status: open
+run_date: 2026-11-13
+role: fn-copy
+run_id: R-20261113-1350-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В начале заголовка по-прежнему 📌 NewsEmoji (id 5397782960512444700); для новости про «МЮ» нужен premium-герб «Манчестер Юнайтед» из FC_logos (тег man-utd)
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261113-1140-fn-copy-other
+status: open
+run_date: 2026-11-13
+role: fn-copy
+run_id: R-20261113-1715-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: В абзаце «аргентинским специалистом» — в source_text национальности нет; убрать и оставить контракт до июня 2029 без добавленных фактов (как в источнике)
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261113-1140-fn-design-other
+status: fixed
+run_date: 2026-11-13
+role: fn-design
+run_id: R-20261113-1935-reg
+severity: medium
+category: other
+
+### What went wrong
+- фото не найдено: NO_PHOTO
+
+### How the agent recovered this run
+- не указано
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `scripts/compose_photo.py`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- Портретные превью Telegram (telesco.pe, 180×320) отсекались из‑за порога min(сторона) ≥ 320. Теперь длинная сторона ≥ 320, короткая ≥ 160. Тест на telesco-превью в tests/test_photos.py.
