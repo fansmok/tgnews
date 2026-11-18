@@ -1333,3 +1333,110 @@ category: other
 ### Fixer resolution
 - fixed
 - Причина та же: scout видел только man-utd, place_emoji не ставил второй знак. Починено в lexicon.py и place_emoji.py, не в тексте поста.
+
+## INC-20261118-1136-fn-critic-other
+status: open
+run_date: 2026-11-18
+role: fn-critic
+run_id: R-20261118-1405-reg
+severity: medium
+category: other
+
+### What went wrong
+- Статистическая инфографика опубликована без цифр — только заголовок
+
+### How the agent recovered this run
+- no
+
+### Durable fix needed before next run
+- fn-copy: абзац с переводом статистики из источника
+
+### Suggested files to inspect/change
+- `caption.html`
+- `copy.json`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261118-1136-fn-copy-other
+status: open
+run_date: 2026-11-18
+role: fn-copy
+run_id: R-20261118-1405-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика: Суть новости — сравнение статистики Винисиуса за последние 12 матчей: по «Реалу» 882 мин, 1 гол, 3 ассиста; по сборной Бразилии 880 мин, 8 голов, 3 ассиста (все соревнования). В посте только заголовок, цифр нет — читатель не получает содержание источника. Добавь короткий абзац с этими числами, ключевые показатели выдели жирным.
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- pending
+
+## INC-20261118-1140-fn-copy-other
+status: fixed
+run_date: 2026-11-18
+role: fn-copy
+run_id: R-20261118-1945-reg
+severity: medium
+category: other
+
+### What went wrong
+- REWORK критика:
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- разобрать фиксеру
+
+### Suggested files to inspect/change
+- `none`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- Тот же сбой, что INC-20261118-1141: опрос «Как вам?» не должен становиться абзацем.
+
+## INC-20261118-1141-fn-copy-other
+status: fixed
+run_date: 2026-11-18
+role: fn-copy
+run_id: R-20261118-1945-reg
+severity: medium
+category: other
+
+### What went wrong
+- Телеграм-пост про форму «Барселоны»: summary «Как вам?» попал в абзац, bold_spans пустой — machine check FAIL.
+
+### How the agent recovered this run
+- текст переписан Gemini
+
+### Durable fix needed before next run
+- Не переносить опрос и короткие вопросы к аудитории в paragraphs.
+
+### Suggested files to inspect/change
+- `src/newsagent/copytext.py`
+
+### Secrets
+- none recorded
+
+### Fixer resolution
+- fixed
+- `engagement_line` отсекает «Как вам?» и похожие строки в keep_summary_fact и detach_quote. Пост из одного заголовка проходит bold_spans.

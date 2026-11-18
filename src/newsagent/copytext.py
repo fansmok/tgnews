@@ -123,7 +123,7 @@ def keep_summary_fact(title: str, paragraphs: list[str], summary: str) -> list[s
     if any(part.strip() for part in paragraphs):
         return paragraphs
     fact = summary.strip()
-    if not fact or restates_title(title, fact):
+    if not fact or engagement_line(fact) or restates_title(title, fact):
         return [part for part in paragraphs if part.strip()]
     if len(fact) > 320:
         fact = fact[:320].rsplit(" ", 1)[0].strip()
@@ -201,7 +201,7 @@ def detach_quote(title: str, paragraphs: list[str], quote_text: str) -> tuple[st
     for part in paragraphs:
         cleaned = _without_quote(part, quote) if quote else part.strip()
         flat = _flat(cleaned)
-        if not flat or restates_title(title, cleaned):
+        if not flat or engagement_line(cleaned) or restates_title(title, cleaned):
             continue
         kept.append(cleaned)
     body_flat = _flat(title + " " + " ".join(kept))
@@ -284,6 +284,42 @@ _CONTENT = re.compile(
     r"\bsaid\b|\bsays\b|\bclaimed\b|\bdemanded\b|\baccused\b",
     re.IGNORECASE,
 )
+_ENGAGEMENT = re.compile(
+    r"^(?:"
+    r"как вам|"
+    r"нравится(?:\s+вам)?|"
+    r"что думаете|"
+    r"ваше мнение|"
+    r"за или против|"
+    r"согласны|"
+    r"норм|"
+    r"огонь|"
+    r"ставьте|"
+    r"голосуйте|"
+    r"проголосуйте|"
+    r"кто лучше|"
+    r"кто хуже"
+    r")[\s?!.🔥]*$",
+    re.IGNORECASE,
+)
+
+
+def engagement_line(text: str) -> bool:
+    """Опрос или призыв к реакции из чужого канала — не переносим в абзац."""
+    cleaned = text.strip()
+    if not cleaned:
+        return False
+    if len(cleaned) > 48:
+        return False
+    folded = _flat(cleaned)
+    if _ENGAGEMENT.match(folded):
+        return True
+    # короткий вопрос без фактов
+    if cleaned.endswith("?") and len(folded.split()) <= 5 and not re.search(r"\d", cleaned):
+        return not (_names(cleaned) or _clubs(cleaned))
+    return False
+
+
 LIST_TEASER = re.compile(
     r"(?:"
     r"сам(?:ые|ый|ая|ое)|"

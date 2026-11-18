@@ -1,7 +1,15 @@
 import importlib.util
 from pathlib import Path
 
-from newsagent.copytext import BOLD_SPAN_RULE, clause_outside_title, detach_quote, keep_summary_fact, repeats_quote, list_teaser_without_names
+from newsagent.copytext import (
+    BOLD_SPAN_RULE,
+    clause_outside_title,
+    detach_quote,
+    engagement_line,
+    keep_summary_fact,
+    list_teaser_without_names,
+    repeats_quote,
+)
 
 
 def _write_copy():
@@ -74,6 +82,27 @@ def test_summary_fact_stays_when_the_title_covers_the_story():
 def test_same_summary_does_not_become_a_second_title():
     title = "Батраков праздновал с фанатами"
     assert keep_summary_fact(title, [], title) == []
+
+
+def test_engagement_teaser_not_in_body():
+    title = "Дизайн третьего комплекта формы «Барселоны» на следующий сезон"
+    assert engagement_line("Как вам?")
+    assert keep_summary_fact(title, [], "Как вам?") == []
+    _, paragraphs, _ = detach_quote(title, ["Как вам?"], "")
+    assert paragraphs == []
+    copy = _write_copy().normalize(
+        {
+            "title": title,
+            "paragraphs": ["Как вам?"],
+            "bold_spans": [],
+            "quote_text": "",
+            "quote_author": "",
+        },
+        "source",
+        summary="Как вам?",
+    )
+    assert copy["paragraphs"] == []
+    assert copy["bold_spans"] == []
 
 
 def test_prompt_asks_for_the_key_name_when_there_is_no_number():

@@ -72,6 +72,23 @@ def test_machine_rejects_photo_review_rework(tmp_path):
     assert report["checks"]["photo_review"]["status"] == "FAIL"
 
 
+def test_machine_allows_title_only_when_body_is_engagement_teaser(tmp_path):
+    _ready_run(tmp_path)
+    title = "Дизайн третьего комплекта формы «Барселоны» на следующий сезон"
+    write_json(
+        tmp_path / "copy.json",
+        {
+            "title": title,
+            "paragraphs": [],
+            "bold_spans": [],
+            "quote": None,
+            "source_text": f"{title}\nКак вам?",
+        },
+    )
+    report = machine_check(tmp_path)
+    assert report["checks"]["bold_spans"]["status"] == "PASS"
+
+
 def test_machine_rejects_list_teaser_without_names(tmp_path):
     _ready_run(tmp_path)
     write_json(
